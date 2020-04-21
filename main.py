@@ -8,3 +8,9 @@
 # Includes files for test suites.
 # Includes data partitioning 
 # ... and device suites.
+
+x = 3
+y = 4
+
+print(x + y)
+print("hello")
