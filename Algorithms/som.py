@@ -1,5 +1,6 @@
 import json
 import numpy as np
+from scipy.optimize import linear_sum_assignment
 from numpy import (array, unravel_index, nditer, linalg, random, subtract,
                    power, exp, pi, zeros, ones, arange, outer, meshgrid, dot,
                    logical_and, mean, std, cov, argsort, linspace, transpose,
@@ -19,25 +20,12 @@ def build_iteration_indexes(data_len, num_iterations,
 def asymptotic_decay(learning_rate, t, max_iter):
     return learning_rate / (1+t/(max_iter/2))
 
-# Global Consts for SOM Devices
-PARAMS = { 
-    "X": 5, 
-    "Y": 5, 
-    "INPUT_LEN": 2,
-    "SIGMA": 1.0, 
-    "LR": 0.5, 
-    "SEED": None,
-    "NEIGH_FUNC": "gaussian",
-    "ACTIVATION": 'euclidean',
-    "MAX_ITERS": 100,
-    "DECAY": asymptotic_decay
-}
-
 class SOM_Device:
 # In chronological order of calling
-    def __init__(self, indicies_for_data_subset, params):
+    def __init__(self, data, params):
         """Initialize SOM member variables"""
-        self.data = [[10, 10], [9, 10], [8, 10], [9, 9], [1, 1], [0, 1], [0, 0], [1, 0]]
+        self.id = params['ID']
+        self._data = data
         self._x = params['X']
         self._y = params['Y']
         self._learning_rate = params['LR']
@@ -87,7 +75,7 @@ class SOM_Device:
         """Trains the SOM"""
         # Sets data indices for training data input
         num_iteration = self._max_iters
-        data = self.data
+        data = self._data
         iterations = build_iteration_indexes(len(data), num_iteration, self._random_generator)
 
         # Training
@@ -96,11 +84,11 @@ class SOM_Device:
                         t, num_iteration)
 
     def get_report_for_server(self):
-        updates_for_server = []
+        updates_for_server = self._weights
         return updates_for_server
 
     def update_device(self, reports_from_server):
-        pass
+        self._weights = reports_from_server
 
     # Helper functions-- Training
     def winner(self, x):
@@ -180,17 +168,126 @@ class SOM_Device:
     def _manhattan_distance(self, x, w):
         return linalg.norm(subtract(x, w), ord=1, axis=-1)
 
-class SOM_Server:
+class SOM_server:
     # In chronological order of calling
-    def __init__(self):
-        pass
+    def __init__(self, params):
+        # Initialize dimensions of map
+        self._x = params['X']
+        self._y = params['Y']
+        self._input_len = params['INPUT_LEN']
+        self._random_seed = params['SEED']
+        self._random_generator = random.RandomState(self._random_seed)
+
+        # Initialize weights
+        self._weights = self._random_generator.rand(self._x, self._y, self._input_len) * 2 - 1
+        self._weights /= linalg.norm(self._weights, axis=-1, keepdims=True)
+
+        activation_distance = params['ACTIVATION']
+        distance_functions = {'euclidean': self._euclidean_distance,
+                        'cosine': self._cosine_distance,
+                        'manhattan': self._manhattan_distance}
+                        
+        if activation_distance not in distance_functions:
+            msg = '%s not supported. Distances available: %s'
+            raise ValueError(msg % (activation_distance,
+                                    ', '.join(distance_functions.keys())))
+
+        self._activation_distance = distance_functions[activation_distance]
+
     def run_on_server(self):
-        pass
+        return self._weights
+
     def update_server(self, reports_from_devices):
-        pass
+        # find lowest euclidean distance correspondence between cluster assignments among devices
+        # row_ind, col_ind = linear_sum_assignment(reports_from_devices)
+        num_reports = len(reports_from_devices)
+        random_perm = random.permutation(num_reports)
+        for i, _ in enumerate(random_perm):
+            report = reports_from_devices[i]
+            cost = self._activation_distance(self._weights, report)
+            row_ind, col_ind = linear_sum_assignment(cost)
+            self._update_weights(row_ind, col_ind, report)
+
     def get_reports_for_devices(self):
-        updates_for_devices = []
+        updates_for_devices = self._weights
         return updates_for_devices
 
-s = SOM_Device(1, PARAMS)
-s.run_on_device()
+    # Helper functions-- Update weights
+    def _update_weights(self, row_ind, col_ind, report_from_devices):
+        for r, c in zip(row_ind, col_ind):
+            self._weights[r, c] = (self._weights[r, c] + report_from_devices[r, c]) / 2.0
+
+    # Helper functions-- Distance
+    def _cosine_distance(self, x, w):
+        num = (w * x).sum(axis=2)
+        denum = multiply(linalg.norm(w, axis=2), linalg.norm(x))
+        return 1 - num / (denum+1e-8)
+
+    def _euclidean_distance(self, x, w):
+        return linalg.norm(subtract(x, w), axis=-1)
+
+    def _manhattan_distance(self, x, w):
+        return linalg.norm(subtract(x, w), ord=1, axis=-1)
+
+def create_devices(data, device_class, num_devices, params):
+    num_data_points = len(data)
+    indices = range(num_data_points)
+    devices = []
+    sample_size = int(num_data_points / num_devices)
+    for ID in range(num_devices):
+        sub_indices = random.choice(indices, size=sample_size, replace=True)
+        params["ID"] = ID
+        data_subset = [data[i] for i in sub_indices]
+        devices.append(device_class(data_subset, params))
+    return devices
+
+def run_devices(devices):
+    results_to_server = []
+    for device in devices:
+        print("Running Device " + str(device.id))
+        device.run_on_device()
+        results_to_server.append(device.get_report_for_server())
+    return results_to_server
+
+def update_devices(devices, server_to_devices):
+    for device in devices:
+        device.update_device(server_to_devices)
+
+## Run Federated Algorithm
+# Test Parameters
+data = [[10, 10], [9, 10], [8, 10], [9, 9], [1, 1], [0, 1], [0, 0], [1, 0], [10, 10], [9, 10], [8, 10], [9, 9], [1, 1], [0, 1], [0, 0], [1, 0], [10, 10], [9, 10], [8, 10], [9, 9], [1, 1], [0, 1], [0, 0], [1, 0], [10, 10], [9, 10], [8, 10], [9, 9], [1, 1], [0, 1], [0, 0], [1, 0]] # usually some method to get_data()
+num_devices = 4
+num_selected_devices = 2
+num_iterations = 100
+
+params = { 
+    "X": 2, 
+    "Y": 2, 
+    "INPUT_LEN": len(data[0]),
+    "SIGMA": 1.0, 
+    "LR": 0.5, 
+    "SEED": 1,
+    "NEIGH_FUNC": "gaussian",
+    "ACTIVATION": 'euclidean',
+    "MAX_ITERS": 10,
+    "DECAY": asymptotic_decay
+}
+# set seed
+random.seed(params['SEED'])
+
+# Run federated algorithm
+server = SOM_server(params)
+devices = create_devices(data, SOM_Device, num_devices, params)
+for it in range(num_iterations):
+    # select device subset
+    indices = range(num_devices)
+    device_subset_indices = random.choice(indices, num_selected_devices, replace=False) 
+    device_subset = [devices[i] for i in device_subset_indices]
+    # run training on devices and send results to the server
+    results_to_server = run_devices(device_subset)
+    server.update_server(results_to_server)
+    server_to_devices = server.get_reports_for_devices()
+    # update devices
+    update_devices(devices, server_to_devices)
+
+print(server.run_on_server())
