@@ -16,8 +16,8 @@ class DataSetCollection:
     data_sets_names = ["circles", "moons", "blobs", "longblobs"]
 
     def __init__(self):
-        self.data = np.load("sklearn_data.npz") # update for path
-        self.labeled_data = np.load("sklearn_labels.npz") # update for path
+        self.data = np.load("Data/sklearn_data.npz") # update for path
+        self.labeled_data = np.load("Data/sklearn_labels.npz") # update for path
     
     def construct_key(self, name, noice_level):
         assert(name in self.data_sets_names)
@@ -25,7 +25,7 @@ class DataSetCollection:
         return name + "_" + noice_level + "_" + "noise"
     
     def get_set(self, name, noice_level):
-        return self.get_data_set, self.get_label_set
+        return self.get_data_set(name, noice_level), self.get_label_set(name, noice_level)
 
     def get_data_set(self, name, noice_level):
         return self.data[self.construct_key(name,noice_level)]
@@ -98,9 +98,9 @@ class ServerAlg:
     # In chronological order of calling
     def __init__(self):
         pass
-    def run_on_server(self):
-        pass
     def update_server(self, reports_from_devices):
+        pass
+    def run_on_server(self):
         pass
     def get_reports_for_devices(self):
         updates_for_devices = []
@@ -149,7 +149,7 @@ class Server:
     def run_devices(self, devices):
         reports = []
         for device in devices:
-            device.run_on_server()
+            device.run()
             report = device.report_back_to_server()
             reports.append(report)
         return reports
@@ -213,5 +213,6 @@ def basic(server_alg_class, device_alg_class):
 
     number_of_rounds = 50
     num_devices_per_group_per_round = [{0: 10, 1:10}] * number_of_rounds
-    
+
     suite.run_rounds(num_devices_per_group_per_round)
+
