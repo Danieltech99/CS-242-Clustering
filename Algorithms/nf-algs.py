@@ -4,6 +4,8 @@
 import numpy as np
 from sklearn.cluster import SpectralClustering
 from sklearn.cluster import KMeans
+from sklearn.cluster import AgglomerativeClustering
+from minisom import MiniSom  
 
 class DataSetCollection:
     data = None
@@ -71,6 +73,8 @@ class NonFedAlgs:
         self._num_clusters = params['num_clusters']
         self._data = params['data']
         self._seed = 0
+        self._input_len = len(self._data[0])
+        self._labels = params['labels']
 
         if 'seed' in params:
             self._seed = params['seed']
@@ -78,6 +82,16 @@ class NonFedAlgs:
         # linkage for agglomerative clustering
         if 'linkage' in params:
             self._linkage = params['linkage']
+        
+        # variables for SOM
+        if 'SOM_dim' in params:
+            self._som_dim = params['SOM_dim']
+        if 'sigma' in params:
+            self._sigma = params['sigma']
+        if 'lr' in params:
+            self._lr = params['lr']
+        if 'som_iters' in params:
+            self._som_iters = params['som_iters']
     
     # Spectral clustering, a non-linear alternative to kmeans
     def spectral_clustering(self):
@@ -92,25 +106,68 @@ class NonFedAlgs:
         return clustering.labels_
     
     # Hierarchical/Agglomerative Clustering
+    def hierarchical(self):
+        clustering = AgglomerativeClustering(n_clusters = self._num_clusters, linkage = self._linkage).fit(self._data)
+        return clustering.labels_
     
+    # Self Organizing Maps
+    def SOM(self):
+        som = MiniSom(self._som_dim, self._som_dim, self._input_len, sigma=self._sigma, learning_rate=self._lr) # initialization of 6x6 SOM
+        som.train_random(self._data, self._som_iters) # trains the SOM with 100 iterations
+        class_assignments = som.labels_map(self._data, self._labels)
+        classification = self._classify(som, self._data, class_assignments)
+        return classification
+    
+    def _classify(self, som, data, class_assignments):
+        """Classifies each sample in data in one of the classes definited
+        using the method labels_map.
+        Returns a list of the same length of data where the i-th element
+        is the class assigned to data[i].
+        """
+        winmap = class_assignments
+        default_class = np.sum(list(winmap.values())).most_common()[0][0]
+        result = []
+        for d in data:
+            win_position = som.winner(d)
+            if win_position in winmap:
+                result.append(winmap[win_position].most_common()[0][0])
+            else:
+                result.append(default_class)
+        return result
 
+# # Params
+# num_clusters = 3
+# num_data_points = 1000
+# seed = 0
+# linkage = 'ward'
+# SOM_dim = 3
+# sigma = 0.3
+# lr = 0.5
+# som_iters = 100
 
-# Params
-num_clusters = 2
-num_data_points = 1000
+# # Load data
+# collection = DataSetCollection()
+# data, labels = collection.get_set("blobs", "vlow")
 
-# Load data
-collection = DataSetCollection()
-data, labels = collection.get_set("blobs", "vlow")
-print(data)
+# params = {
+#     'num_clusters': num_clusters,
+#     'data': data,
+#     'seed': seed,
+#     'labels': labels,
+#     'linkage': linkage,
+#     'SOM_dim': SOM_dim,
+#     'sigma': sigma,
+#     'lr': lr,
+#     'som_iters': som_iters
+# }
 
-clustering = KMeans(n_clusters=num_clusters,
-       random_state=0).fit(data[:num_data_points])
+# algs = NonFedAlgs(params)
+# clustering_labels = algs.SOM()
 
-metrics_params = {
-    'true': labels[:num_data_points],
-    'pred': clustering.labels_
-}
-m = Metrics(metrics_params)
-print(m.ari())
+# metrics_params = {
+#     'true': labels,
+#     'pred': clustering_labels
+# }
+# m = Metrics(metrics_params)
+# print(m.ari())
 
