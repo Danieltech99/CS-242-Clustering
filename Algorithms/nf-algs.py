@@ -1,6 +1,7 @@
 # 
 # Non federated algorithms
 #
+
 import numpy as np
 from sklearn.cluster import SpectralClustering
 from sklearn.cluster import KMeans

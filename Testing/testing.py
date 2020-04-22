@@ -9,6 +9,8 @@ import math
 from functools import partial
 import matplotlib.pyplot as plt
 
+ENABLE_PLOTS = False
+
 
 class DataSetCollection:
     data = None
@@ -201,8 +203,9 @@ class DeviceSuite:
 
     def accuracy(self, data, labels):
         pred_labels = self.server.classify(data)
-        plt.scatter(data[:, 0], data[:, 1], c=pred_labels, s=1)
-        plt.show()
+        if ENABLE_PLOTS:
+            plt.scatter(data[:, 0], data[:, 1], c=pred_labels, s=1)
+            plt.show()
         return metrics.adjusted_rand_score(labels, pred_labels)
 
 
@@ -241,16 +244,17 @@ def asymptotic_decay(learning_rate, t, max_iter):
 
 from Algorithms.som import SOM_server,SOM_Device
 def som():
+    input_len = 2 # this is the length of each data point
     params = { 
         "X": 2, 
-        "Y": 2, 
-        "INPUT_LEN": 10000, # TODO: Fix
+        "Y": input_len, # must be the same as the input length to classify properly
+        "INPUT_LEN": input_len, 
         "SIGMA": 1.0, 
         "LR": 0.5, 
         "SEED": 1,
         "NEIGH_FUNC": "gaussian",
         "ACTIVATION": 'euclidean',
-        "MAX_ITERS": 10,
+        "MAX_ITERS": 5,
         "DECAY": asymptotic_decay
     }
     # set seed
@@ -317,8 +321,17 @@ def tests():
                "COMPRESSION": 0.05}
 
     # set seed
-    print("cure")
-    custom(partial(CURE_Server, cure_params=cure_params), partial(K_Means_Device, params=params))
+    print("Cure:")
+    for level in collection.noice_levels:
+        for name in collection.data_sets_names:
+            try:
+                print(name + "-" + level)
+                custom(
+                    partial(CURE_Server, cure_params=cure_params), partial(K_Means_Device, params=params),
+                    data_set = collection.get_set(name, level)
+                )
+            except ValueError:
+                pass
 
 
 
@@ -327,6 +340,7 @@ def main():
     cure()
 
 if  __name__ == "__main__":
+    # tests()
     tests()
     pass
 #     if s# ys.argv[1].upper() == 'SOM':

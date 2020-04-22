@@ -32,7 +32,7 @@ class SOM_Device:
         self._learning_rate = params['LR']
         self._sigma = params['SIGMA']
         self._max_iters = params['MAX_ITERS']
-        self._input_len = params['INPUT_LEN']
+        self._input_len = len(self._data[0])
         self._random_seed = params['SEED']
         self._random_generator = random.RandomState(self._random_seed)
         self._decay_function = params['DECAY']
@@ -203,7 +203,11 @@ class SOM_server:
     def classify(self, data):
         centers = self._weights[:,:,0]
         y = np.arange(centers.shape[0])
-        clf = NearestCentroid(centers,y)
+        clf = NearestCentroid()
+        f = open("demofile2.txt", "w")
+        f.write(np.array2string(centers))
+        f.write(np.array2string(y))
+        f.write(str(centers.shape[0]))
         clf.fit(centers, y)
         return clf.predict(data)
 
