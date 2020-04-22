@@ -23,7 +23,7 @@ def asymptotic_decay(learning_rate, t, max_iter):
 class SOM_Device:
 # In chronological order of calling
     def __init__(self, data, params):
-        """Initialize SOM member variables"""
+        """Initialize SOM membe r variables"""
         self.id = params['ID']
         self._data = data
         self._x = params['X']
