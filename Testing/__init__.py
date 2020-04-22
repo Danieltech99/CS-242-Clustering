@@ -3,6 +3,9 @@ from abc import ABC,abstractmethod
 import numpy as np
 import math
 
+import sys
+import os
+
 # Data Sets (x4)
 # 5 levels of noice per data set
 # 10,000 data points
@@ -238,16 +241,17 @@ def asymptotic_decay(learning_rate, t, max_iter):
 
 from Algorithms.som import SOM_server,SOM_Device
 def som():
+    input_len = 2 # this is the length of each data point
     params = { 
         "X": 2, 
-        "Y": 2, 
-        "INPUT_LEN": 10000, # TODO: Fix
+        "Y": input_len, # must be the same as the input length to classify properly
+        "INPUT_LEN": input_len, 
         "SIGMA": 1.0, 
         "LR": 0.5, 
         "SEED": 1,
         "NEIGH_FUNC": "gaussian",
         "ACTIVATION": 'euclidean',
-        "MAX_ITERS": 10,
+        "MAX_ITERS": 5,
         "DECAY": asymptotic_decay
     }
     # set seed
@@ -270,5 +274,6 @@ def cure():
     basic(partial(CURE_Server, cure_params=cure_params), partial(K_Means_Device, params=params))
 
 if __name__ == "__main__":
-    # som()
-    cure()
+    som()
+    # print("hello!")
+    # cure()
