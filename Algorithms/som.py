@@ -22,9 +22,15 @@ def asymptotic_decay(learning_rate, t, max_iter):
 
 class SOM_Device:
 # In chronological order of calling
+<<<<<<< HEAD
     def __init__(self, data, params):
         """Initialize SOM membe r variables"""
         self.id = params['ID']
+=======
+    def __init__(self, data, params, id_num = None):
+        """Initialize SOM member variables"""
+        self.id = params['ID'] if id_num is None else id_num
+>>>>>>> 387712af18d49e3b7b67e232186c85f3879d6abc
         self._data = data
         self._x = params['X']
         self._y = params['Y']
@@ -73,6 +79,7 @@ class SOM_Device:
 
     def run_on_device(self):
         """Trains the SOM"""
+        print("Running Device ")
         # Sets data indices for training data input
         num_iteration = self._max_iters
         data = self._data
@@ -195,6 +202,7 @@ class SOM_server:
         self._activation_distance = distance_functions[activation_distance]
 
     def run_on_server(self):
+        print("Running Serveer ")
         return self._weights
 
     def update_server(self, reports_from_devices):
@@ -253,41 +261,43 @@ def update_devices(devices, server_to_devices):
     for device in devices:
         device.update_device(server_to_devices)
 
-## Run Federated Algorithm
-# Test Parameters
-data = [[10, 10], [9, 10], [8, 10], [9, 9], [1, 1], [0, 1], [0, 0], [1, 0], [10, 10], [9, 10], [8, 10], [9, 9], [1, 1], [0, 1], [0, 0], [1, 0], [10, 10], [9, 10], [8, 10], [9, 9], [1, 1], [0, 1], [0, 0], [1, 0], [10, 10], [9, 10], [8, 10], [9, 9], [1, 1], [0, 1], [0, 0], [1, 0]] # usually some method to get_data()
-num_devices = 4
-num_selected_devices = 2
-num_iterations = 100
+if __name__ == "__main__":
 
-params = { 
-    "X": 2, 
-    "Y": 2, 
-    "INPUT_LEN": len(data[0]),
-    "SIGMA": 1.0, 
-    "LR": 0.5, 
-    "SEED": 1,
-    "NEIGH_FUNC": "gaussian",
-    "ACTIVATION": 'euclidean',
-    "MAX_ITERS": 10,
-    "DECAY": asymptotic_decay
-}
-# set seed
-random.seed(params['SEED'])
+    ## Run Federated Algorithm
+    # Test Parameters
+    data = [[10, 10], [9, 10], [8, 10], [9, 9], [1, 1], [0, 1], [0, 0], [1, 0], [10, 10], [9, 10], [8, 10], [9, 9], [1, 1], [0, 1], [0, 0], [1, 0], [10, 10], [9, 10], [8, 10], [9, 9], [1, 1], [0, 1], [0, 0], [1, 0], [10, 10], [9, 10], [8, 10], [9, 9], [1, 1], [0, 1], [0, 0], [1, 0]] # usually some method to get_data()
+    num_devices = 4
+    num_selected_devices = 2
+    num_iterations = 100
 
-# Run federated algorithm
-server = SOM_server(params)
-devices = create_devices(data, SOM_Device, num_devices, params)
-for it in range(num_iterations):
-    # select device subset
-    indices = range(num_devices)
-    device_subset_indices = random.choice(indices, num_selected_devices, replace=False) 
-    device_subset = [devices[i] for i in device_subset_indices]
-    # run training on devices and send results to the server
-    results_to_server = run_devices(device_subset)
-    server.update_server(results_to_server)
-    server_to_devices = server.get_reports_for_devices()
-    # update devices
-    update_devices(devices, server_to_devices)
+    params = { 
+        "X": 2, 
+        "Y": 2, 
+        "INPUT_LEN": len(data[0]),
+        "SIGMA": 1.0, 
+        "LR": 0.5, 
+        "SEED": 1,
+        "NEIGH_FUNC": "gaussian",
+        "ACTIVATION": 'euclidean',
+        "MAX_ITERS": 10,
+        "DECAY": asymptotic_decay
+    }
+    # set seed
+    random.seed(params['SEED'])
 
-print(server.run_on_server())
+    # Run federated algorithm
+    server = SOM_server(params)
+    devices = create_devices(data, SOM_Device, num_devices, params)
+    for it in range(num_iterations):
+        # select device subset
+        indices = range(num_devices)
+        device_subset_indices = random.choice(indices, num_selected_devices, replace=False) 
+        device_subset = [devices[i] for i in device_subset_indices]
+        # run training on devices and send results to the server
+        results_to_server = run_devices(device_subset)
+        server.update_server(results_to_server)
+        server_to_devices = server.get_reports_for_devices()
+        # update devices
+        update_devices(devices, server_to_devices)
+
+    print(server.run_on_server())
