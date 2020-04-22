@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 from abc import ABC,abstractmethod 
 import numpy as np
-
+import math
 
 # Data Sets (x4)
 # 5 levels of noice per data set
 # 10,000 data points
-
+from functools import partial
 
 
 class DataSetCollection:
@@ -39,7 +39,7 @@ class DataSet:
 
     def __init__(self, data, labels):
         self.data = data
-        self.labels = labels
+        self.labeled_data = labels
     
     def add_label_to_data(self):
         return np.column_stack((self.data,self.labeled_data))
@@ -66,10 +66,10 @@ class DataSampler:
             assert(data_pct >= 0 and data_pct <= 1)
             assert(perc_iid >= 0 and perc_iid <= 1)
             iid_indices_population = dataset_class_instance.get_indices()
-            num_iid_items = iid_indices_population.size * data_pct * perc_iid
+            num_iid_items = math.floor(iid_indices_population.size * data_pct * perc_iid)
             iid_indices_sample = np.random.choice(iid_indices_population, size=num_iid_items, replace=False)
             
-            num_noniid_items = iid_indices_population.size * data_pct * (1-perc_iid)
+            num_noniid_items = math.floor(iid_indices_population.size * data_pct * (1-perc_iid))
             non_iid_indices_population = dataset_class_instance.get_indices_for_label(group)
             non_iid_indices_sample = np.random.choice(non_iid_indices_population, size=num_noniid_items, replace=False)
 
@@ -112,16 +112,16 @@ class Device:
     # data = np.array([], ndmin=2)
     indicies = np.array([])
 
-    def __init__(self, alg_device_class, indicies):
+    def __init__(self, alg_device_class, indicies, id_num = None):
         # self.data = data
         # Passes starting data to alg through constructor
-        self.alg = alg_device_class(indicies)
+        self.alg = alg_device_class(indicies, id_num=id_num)
         self.indicies = indicies
     
     def run(self):
         self.alg.run_on_device()
 
-    def report_back_to_server(self, input):
+    def report_back_to_server(self):
         return self.alg.get_report_for_server()
 
     def update(self, update_data):
@@ -177,9 +177,9 @@ class DeviceSuite:
     def __init__(self, server_alg_class, device_alg_class, dataset_class_instance, num_devices, pct_data_per_device, perc_iid_per_device, group_per_device):
         sampler_instance = DataSampler()
         data = sampler_instance.sample(dataset_class_instance, num_devices, pct_data_per_device, perc_iid_per_device, group_per_device)
-        assert(len(data) == num_devices)
+        # assert(len(data) == num_devices)
         for group, devices in data.items():
-            self.groups[group] = [Device(device_alg_class, indicies) for indicies in range(devices)]
+            self.groups[group] = [Device(device_alg_class, indicies, id_num=(group*10000+i)) for i,indicies in enumerate(devices)]
         
         self.server = Server(server_alg_class, self.groups)
     
@@ -203,6 +203,7 @@ collection = DataSetCollection()
 def basic(server_alg_class, device_alg_class):
     data, labels = collection.get_set("blobs", "vlow")
     dataset = DataSet(data, labels)    
+    print(data.shape)
     
     num_of_devices = 100
     pct_data_per_device = np.array([0.2] * num_of_devices) 
@@ -216,3 +217,26 @@ def basic(server_alg_class, device_alg_class):
 
     suite.run_rounds(num_devices_per_group_per_round)
 
+
+def asymptotic_decay(learning_rate, t, max_iter):
+    return learning_rate / (1+t/(max_iter/2))
+
+from Algorithms.som import SOM_server,SOM_Device
+def som():
+    params = { 
+        "X": 2, 
+        "Y": 2, 
+        "INPUT_LEN": 10000, # TODO: Fix
+        "SIGMA": 1.0, 
+        "LR": 0.5, 
+        "SEED": 1,
+        "NEIGH_FUNC": "gaussian",
+        "ACTIVATION": 'euclidean',
+        "MAX_ITERS": 10,
+        "DECAY": asymptotic_decay
+    }
+    # set seed
+    random.seed(params['SEED'])
+    basic(partial(SOM_server, params=params), partial(SOM_Device, params=params))
+
+som()
