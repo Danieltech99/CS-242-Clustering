@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.metrics import pairwise_distances, pairwise_distances_argmin_min
+from sklearn.metrics import pairwise_distances, pairwise_distances_argmin, pairwise_distances_argmin_min
 from pyclustering.cluster.cure import cure
 
 
@@ -43,67 +43,90 @@ class K_Means_Device:
 
         data = self._data
         for i in range(self._n_inits):
-            initial_centers = _init_cluster_centers(data)
-            _fit(data, initial_centers)
+            initial_centers = self._init_cluster_centers(data)
+            self._fit(data, initial_centers)
 
         
-    def _init_cluster_centers(self, data, server_centers, metric=None):
+    def _init_cluster_centers(self, data, metric=None):
         server_centers = self._server_centers
         n_clusters = self._n_clusters
         if metric == None:
             metric = "euclidean"
 
-        centers = np.zeros((n_clusters, self._n_dims))
-        for i in range(n_clusters):
-            all_centers = np.vstack((server_centers, centers[0:i, :]))
-            distance_pairs = pairwise_distances(data, all_centers)
-            sum_distances = np.sum(distance_pairs, axis=1)
-            datapoint_probs = sum_distances/np.sum(sum_distances)
-            
-            next_center_idx = np.random.choice(data.shape[0], p=datapoint_probs)
-            centers[i] = data[next_center_idx]
+        if server_centers is None:
+            centers = np.zeros((n_clusters, self._n_dims))
+            centers[0] = data[np.random.choice(data.shape[0])]
+            for i in range(1, n_clusters):
+                all_centers = centers[0:i, :]
+                distance_pairs = pairwise_distances(data, all_centers)
+                sum_distances = np.sum(distance_pairs, axis=1)
+                datapoint_probs = sum_distances/np.sum(sum_distances)
+                
+                next_center_idx = np.random.choice(data.shape[0], p=datapoint_probs)
+                centers[i] = data[next_center_idx]
 
-        all_centers = np.vstack((server_centers, centers))
+            all_centers = centers
+
+
+        else:
+            centers = np.zeros((n_clusters, self._n_dims))
+            server_centers = np.array(server_centers)
+            for i in range(n_clusters):
+                all_centers = np.vstack((server_centers, centers[0:i, :]))
+                distance_pairs = pairwise_distances(data, all_centers)
+                sum_distances = np.sum(distance_pairs, axis=1)
+                datapoint_probs = sum_distances/np.sum(sum_distances)
+                
+                next_center_idx = np.random.choice(data.shape[0], p=datapoint_probs)
+                centers[i] = data[next_center_idx]
+
+            all_centers = np.vstack((server_centers, centers))
         return all_centers
 
 
     def _fit(self, data, initial_centers):
-        n_centers = initial_centers.shape[1]
-        for i in range(self.max_iter):
+        centers = initial_centers
+        for i in range(self._max_iters):
+            n_centers = centers.shape[0]
             centers_old = centers.copy()
 
-            labels, inertia = _compute_labels_inertia(data, centers_old)
-            centers = _compute_cluster_centers(data, labels, n_centers)
-            
+            labels, inertia = self._compute_labels_inertia(data, centers_old)
+            centers = self._compute_cluster_centers(data, labels, n_centers)
+
             if self._best_inertia == None or inertia < self._best_inertia:
                 self._best_inertia = inertia.copy()
                 self._best_labels = labels.copy()
                 self._best_centers = centers_old.copy()
-
-            if np.allclose(centers_old, centers, atol=tolerance):
+                
+            if centers_old.shape == centers.shape and np.allclose(centers_old, centers, atol=self._tolerance):
                 break
 
 
-    def _compute_labels_inertia(data, centers, metric=None):
+    def _compute_labels_inertia(self, data, centers, metric=None):
         if metric == None:
             metric = "euclidean"
 
+        # print("centers", centers)
         labels, distances = pairwise_distances_argmin_min(data, centers, metric)
         inertia = np.sum(distances**2)
 
         return labels, inertia
 
     
-    def _compute_cluster_centers(data, labels, n_centers):
-        n_datapoints = data.shape[1]
-        centers = np.zeros((n_datapoints, n_centers))
+    def _compute_cluster_centers(self, data, labels, n_centers):
+        # n_datapoints = data.shape[0]
+        data_dims = data.shape[1]
+        centers = np.zeros((n_centers, data_dims))
 
+        j = 0
         for i in range(n_centers):
             data_i = data[labels == i]
-            center = np.array(np.sum(data_i, axis=0)/data_i.shape[1])
-            centers[i] = center
+            if data_i.shape[0] != 0:
+                center = np.array(np.sum(data_i, axis=0)/data_i.shape[0])
+                centers[i] = center
+                j += 1
 
-        return centers
+        return centers[0:j]
 
 
     def get_report_for_server(self):
@@ -123,22 +146,33 @@ class CURE_Server:
         self._compression = cure_params["COMPRESSION"]
 
         self.clusters_from_devices = None
+        self.representors = None
         self.server_clusters = None
-
-
 
     def update_server(self, reports_from_devices):
         self.clusters_from_devices = np.vstack(reports_from_devices)
-        
 
     def run_on_server(self):
         clusters_from_devices = self.clusters_from_devices
         cure_instance = cure(clusters_from_devices, self._n_clusters, self._n_rep_points, self._compression)
         cure_instance.process()
         representors = cure_instance.get_representors()
-        self.server_clusters = representors
-
+        self.representors = representors
+        self.server_clusters = np.vstack(representors)
 
     def get_reports_for_devices(self):
         return self.server_clusters
+    
+    def classify(self,data):
+        representor_to_clustering = {}
+        i = 0
+        for j, cluster in enumerate(self.representors):
+            for representor in cluster:
+                representor_to_clustering[i] = j
+                i += 1
+
+        labels = pairwise_distances_argmin(data, self.server_clusters).tolist()
+        labels = np.array([representor_to_clustering[label] for label in labels])
+        return labels
+
         

@@ -28,10 +28,10 @@ class DataSetCollection:
         return self.get_data_set(name, noice_level), self.get_label_set(name, noice_level)
 
     def get_data_set(self, name, noice_level):
-        return self.data[self.construct_key(name,noice_level)]
+        return self.data[self.construct_key(name,noice_level)][::4]
     
     def get_label_set(self, name, noice_level):
-        return self.labeled_data[self.construct_key(name,noice_level)]
+        return self.labeled_data[self.construct_key(name,noice_level)][::4]
 
 class DataSet:
     data = None
@@ -75,7 +75,9 @@ class DataSampler:
 
             if group not in groups:
                 groups[group] = []
-            groups[group].append(np.unique(np.concatenate((iid_indices_sample,non_iid_indices_sample),0)))
+            final_indicies = np.unique(np.concatenate((iid_indices_sample,non_iid_indices_sample),0))
+            data_subset = [dataset_class_instance.data[i] for i in final_indicies]
+            groups[group].append(data_subset)
         return groups
 
 
@@ -115,8 +117,8 @@ class Device:
     def __init__(self, alg_device_class, indicies, id_num = None):
         # self.data = data
         # Passes starting data to alg through constructor
-        self.alg = alg_device_class(indicies, id_num=id_num)
-        self.indicies = indicies
+        self.alg = alg_device_class(np.array(indicies), id_num=id_num)
+        self.indicies = np.array(indicies)
     
     def run(self):
         self.alg.run_on_device()
@@ -130,6 +132,9 @@ class Device:
 import random
 class Server:
     device_groups = []
+
+    def classify(self, data):
+        return self.alg.classify(data)
 
     def __init__(self, alg_server_class, device_groups):
         self.alg = alg_server_class()
@@ -168,7 +173,7 @@ class Server:
         for device in devices:
             device.update(update_for_devices)
 
-
+from sklearn import metrics
 class DeviceSuite:
     server = None
     devices = []
@@ -188,6 +193,14 @@ class DeviceSuite:
         for num_devices_per_group in num_devices_per_group_per_round:
             self.server.run_round(num_devices_per_group)
 
+    def run_rounds_with_accuracy(self, num_devices_per_group_per_round, data, labels):
+        for num_devices_per_group in num_devices_per_group_per_round:
+            self.server.run_round(num_devices_per_group)
+            print("Accuracy: ", self.accuracy(data, labels))
+
+    def accuracy(self, data, labels):
+        pred_labels = self.server.classify(data)
+        return metrics.adjusted_rand_score(labels, pred_labels)
 
 
 # algorithm
@@ -201,21 +214,23 @@ class DeviceSuite:
 collection = DataSetCollection()
 
 def basic(server_alg_class, device_alg_class):
-    data, labels = collection.get_set("blobs", "vlow")
+    data, labels = collection.get_set("blobs", "vhigh")
     dataset = DataSet(data, labels)    
-    print(data.shape)
     
     num_of_devices = 100
-    pct_data_per_device = np.array([0.2] * num_of_devices) 
-    perc_iid_per_device = np.array([0.2] * num_of_devices) 
-    group_per_device    = np.round(np.linspace(0,1,num_of_devices))
+    pct_data_per_device = np.array([0.1] * num_of_devices) 
+    perc_iid_per_device = np.array([0.9] * num_of_devices) 
+    group_per_device    = np.round(np.linspace(0,2,num_of_devices))
 
     suite = DeviceSuite(server_alg_class, device_alg_class, dataset, num_of_devices, pct_data_per_device, perc_iid_per_device, group_per_device)
 
-    number_of_rounds = 50
-    num_devices_per_group_per_round = [{0: 10, 1:10}] * number_of_rounds
+    number_of_rounds = 10
+    num_devices_per_group_per_round = [{0: 10, 1:10, 2:10}] * number_of_rounds
 
-    suite.run_rounds(num_devices_per_group_per_round)
+    suite.run_rounds_with_accuracy(num_devices_per_group_per_round,data, labels)
+
+    print("Done Fed")
+    print("Accuracy: ", suite.accuracy(data, labels))
 
 
 def asymptotic_decay(learning_rate, t, max_iter):
@@ -239,4 +254,21 @@ def som():
     random.seed(params['SEED'])
     basic(partial(SOM_server, params=params), partial(SOM_Device, params=params))
 
-som()
+from Algorithms.k_means import CURE_Server,K_Means_Device
+def cure():
+    params = {"N_CLUSTERS": 10,
+          "MAX_ITERS": 100,
+          "N_INITS": 10,
+          "METRIC": "euclidean",
+          "TOLERANCE": None}
+
+    cure_params = {"N_CLUSTERS": 3,
+               "N_REP_POINTS": 1,
+               "COMPRESSION": 0.05}
+
+    # set seed
+    basic(partial(CURE_Server, cure_params=cure_params), partial(K_Means_Device, params=params))
+
+if __name__ == "__main__":
+    # som()
+    cure()

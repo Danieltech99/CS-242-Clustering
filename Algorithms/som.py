@@ -6,6 +6,7 @@ from numpy import (array, unravel_index, nditer, linalg, random, subtract,
                    logical_and, mean, std, cov, argsort, linspace, transpose,
                    einsum, prod, nan, sqrt, hstack, diff, argmin, multiply)
 from numpy.linalg import norm
+from sklearn.neighbors import NearestCentroid
 
 # Helper functions-- Training
 def build_iteration_indexes(data_len, num_iterations,
@@ -22,15 +23,9 @@ def asymptotic_decay(learning_rate, t, max_iter):
 
 class SOM_Device:
 # In chronological order of calling
-<<<<<<< HEAD
-    def __init__(self, data, params):
-        """Initialize SOM membe r variables"""
-        self.id = params['ID']
-=======
     def __init__(self, data, params, id_num = None):
         """Initialize SOM member variables"""
         self.id = params['ID'] if id_num is None else id_num
->>>>>>> 387712af18d49e3b7b67e232186c85f3879d6abc
         self._data = data
         self._x = params['X']
         self._y = params['Y']
@@ -79,7 +74,7 @@ class SOM_Device:
 
     def run_on_device(self):
         """Trains the SOM"""
-        print("Running Device ")
+        # print("Running Device ")
         # Sets data indices for training data input
         num_iteration = self._max_iters
         data = self._data
@@ -202,8 +197,15 @@ class SOM_server:
         self._activation_distance = distance_functions[activation_distance]
 
     def run_on_server(self):
-        print("Running Serveer ")
+        # print("Running Server ")
         return self._weights
+    
+    def classify(self, data):
+        centers = self._weights[:,:,0]
+        y = np.arange(centers.shape[0])
+        clf = NearestCentroid(centers,y)
+        clf.fit(centers, y)
+        return clf.predict(data)
 
     def update_server(self, reports_from_devices):
         # find lowest euclidean distance correspondence between cluster assignments among devices
@@ -252,7 +254,7 @@ def create_devices(data, device_class, num_devices, params):
 def run_devices(devices):
     results_to_server = []
     for device in devices:
-        print("Running Device " + str(device.id))
+        # print("Running Device " + str(device.id))
         device.run_on_device()
         results_to_server.append(device.get_report_for_server())
     return results_to_server
@@ -300,4 +302,7 @@ if __name__ == "__main__":
         # update devices
         update_devices(devices, server_to_devices)
 
-    print(server.run_on_server())
+    res = server.run_on_server()
+    print(res.shape)
+    print(res[:,:,0])
+    print(res)
