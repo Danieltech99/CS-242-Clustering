@@ -9,8 +9,17 @@
 # Includes data partitioning 
 # ... and device suites.
 
-x = 3
-y = 4
 
-print(x + y)
+# %%
+from Testing.testing import cure
+cure()
+
+
+# %%
 print("hello")
+
+
+# %%
+
+
+# %%
