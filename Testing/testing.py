@@ -17,6 +17,12 @@ class DataSetCollection:
     labeled_data = None
     noice_levels = ["vhigh", "high", "med", "low", "vlow"]
     data_sets_names = ["circles", "moons", "blobs", "longblobs"]
+    count_map = {
+        "circles" : 2, 
+        "moons": 2, 
+        "blobs": 3, 
+        "longblobs": 3
+    }
 
     def __init__(self):
         self.data = np.load("Data/sklearn_data.npz") # update for path
@@ -278,7 +284,6 @@ def cure():
 
 
 
-
 def custom(
         server_alg_class, device_alg_class,
         data_set = collection.get_set("blobs", "vhigh"),
@@ -320,18 +325,56 @@ def tests():
                "N_REP_POINTS": 1,
                "COMPRESSION": 0.05}
 
+    input_len = 2 # this is the length of each data point
+    som_params = { 
+        "X": 2, 
+        "Y": input_len, # must be the same as the input length to classify properly
+        "INPUT_LEN": input_len, 
+        "SIGMA": 1.0, 
+        "LR": 0.5, 
+        "SEED": 1,
+        "NEIGH_FUNC": "gaussian",
+        "ACTIVATION": 'euclidean',
+        "MAX_ITERS": 5,
+        "DECAY": asymptotic_decay
+    }
     # set seed
-    print("Cure:")
+    random.seed(som_params['SEED'])
+    # set seed
+    # print("Cure:")
+
     for level in collection.noice_levels:
         for name in collection.data_sets_names:
-            try:
-                print(name + "-" + level)
-                custom(
-                    partial(CURE_Server, cure_params=cure_params), partial(K_Means_Device, params=params),
-                    data_set = collection.get_set(name, level)
-                )
-            except ValueError:
-                pass
+            count = collection.count_map[name]
+            # data_set = collection.get_set("blobs", "vhigh"),
+            num_of_devices = 100
+            pct_data_per_device = np.array([0.1] * num_of_devices)
+            perc_iid_per_device = np.array([0.5] * num_of_devices)
+            group_per_device    = np.round(np.linspace(0,count-1,num_of_devices))
+            number_of_rounds    = 4
+            num_devices_per_group_per_round = [({i:10 for i in range(count-1)})] * number_of_rounds
+            # print("Cure:", name + "-" + level)
+            # custom(
+            #     partial(CURE_Server, cure_params=cure_params), partial(K_Means_Device, params=params),
+            #     data_set = collection.get_set(name, level),
+            #     num_of_devices = num_of_devices,
+            #     pct_data_per_device = pct_data_per_device,
+            #     perc_iid_per_device = perc_iid_per_device,
+            #     group_per_device    = group_per_device,   
+            #     number_of_rounds    = number_of_rounds,   
+            #     num_devices_per_group_per_round = num_devices_per_group_per_round
+            # )
+            print("SOM:", name + "-" + level)
+            custom(
+                partial(SOM_server, params=som_params), partial(SOM_Device, params=som_params),
+                data_set = collection.get_set(name, level),
+                num_of_devices = num_of_devices,
+                pct_data_per_device = pct_data_per_device,
+                perc_iid_per_device = perc_iid_per_device,
+                group_per_device    = group_per_device,   
+                number_of_rounds    = number_of_rounds,   
+                num_devices_per_group_per_round = num_devices_per_group_per_round
+            )
 
 
 
