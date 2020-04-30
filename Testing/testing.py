@@ -2,6 +2,7 @@
 from abc import ABC,abstractmethod 
 import numpy as np
 import math
+from collections import OrderedDict 
 
 # Data Sets (x4)
 # 5 levels of noice per data set
@@ -16,7 +17,7 @@ class DataSetCollection:
     data = None
     labeled_data = None
     noice_levels = ["vhigh", "high", "med", "low", "vlow"]
-    data_sets_names = ["circles", "moons", "blobs", "longblobs"]
+    data_sets_names = ["moons", "circles", "longblobs", "blobs"]
     count_map = {
         "circles" : 2, 
         "moons": 2, 
@@ -267,7 +268,7 @@ def som():
     random.seed(params['SEED'])
     basic(partial(SOM_server, params=params), partial(SOM_Device, params=params))
 
-from Algorithms.k_means import CURE_Server,K_Means_Device
+from Algorithms.k_means import CURE_Server,K_Means_Device,CURE_Server_Carry,CURE_Server_Keep
 def cure():
     params = {"N_CLUSTERS": 10,
           "MAX_ITERS": 100,
@@ -311,20 +312,104 @@ def custom(
     suite.run_rounds_with_accuracy(num_devices_per_group_per_round,data, labels)
 
     print("Done Fed")
-    print("Accuracy: ", suite.accuracy(data, labels))
+    acc = suite.accuracy(data, labels)
+    print("Accuracy: ", acc)
+    return acc
 
-def tests():
-    # Cure
-    params = {"N_CLUSTERS": 10,
-          "MAX_ITERS": 100,
-          "N_INITS": 10,
-          "METRIC": "euclidean",
-          "TOLERANCE": None}
 
-    cure_params = {"N_CLUSTERS": 3,
-               "N_REP_POINTS": 1,
-               "COMPRESSION": 0.05}
+def run_test_and_save(
+        result_dict,
+        first_key,
+        second_key,
+        data_set_name,
+        level,
+        test,
+        data_set,
+        num_of_devices,
+        pct_data_per_device,
+        perc_iid_per_device,
+        group_per_device,
+        number_of_rounds,
+        num_devices_per_group_per_round,
+    ): 
+    print(test["name"] + ":", data_set_name + "-" + level)
+    result_dict[first_key][second_key].value = custom(
+            test["server"], test["device"],
+            data_set = data_set,
+            num_of_devices = num_of_devices,
+            pct_data_per_device = pct_data_per_device,
+            perc_iid_per_device = perc_iid_per_device,
+            group_per_device    = group_per_device,   
+            number_of_rounds    = number_of_rounds,   
+            num_devices_per_group_per_round = num_devices_per_group_per_round
+        )
 
+
+import multiprocessing 
+def run_tests(tests, data_sets = collection.data_sets_names, levels = collection.noice_levels):
+    results_dict = OrderedDict()
+
+    for data_set_name in data_sets:
+        for level in levels:
+            key_tests = OrderedDict()
+            for test in tests:
+                key_tests[test["name"]] = multiprocessing.Value("d", 0.0, lock=False)
+            key = (data_set_name,level)
+            results_dict[key] = key_tests
+
+    num_of_devices = 100
+    pct_data_per_device = np.array([0.1] * num_of_devices)
+    perc_iid_per_device = np.array([0.5] * num_of_devices)
+    number_of_rounds    = 4
+
+    processes = []
+
+    for data_set_name in data_sets:
+
+        count = collection.count_map[data_set_name]
+
+        group_per_device    = np.round(np.linspace(0,count-1,num_of_devices))    
+        num_devices_per_group_per_round = [({i:10 for i in range(count-1)})] * number_of_rounds
+
+        for level in levels:
+            count = collection.count_map[data_set_name]
+            key = (data_set_name,level)
+            
+            for test in tests:
+                p = multiprocessing.Process(target=run_test_and_save, args=(results_dict,
+                    key,
+                    test["name"],
+                    data_set_name,
+                    level,
+                    test,
+                    collection.get_set(data_set_name, level),
+                    num_of_devices,
+                    pct_data_per_device,
+                    perc_iid_per_device,
+                    group_per_device,
+                    number_of_rounds,
+                    num_devices_per_group_per_round,))
+                processes.append(p)
+                p.start()
+                
+                # results_dict[key][test["name"]] = acc
+            
+    for process in processes:
+        process.join()
+
+    print("results", results_dict)
+    
+    return results_dict
+
+import csv
+def save_test_results(results):
+    with open('results.csv', 'w', newline='') as csvfile:
+        r_file = csv.writer(csvfile, delimiter=',')
+        r_file.writerow(["Data Set (ARI)", "Type"] + list(list(results.values())[0].keys()))
+        for data_pair,pair_results in results.items():
+            r_file.writerow(list(data_pair) + [i.value for i in list(pair_results.values())])
+
+def create_tests():
     input_len = 2 # this is the length of each data point
     som_params = { 
         "X": 2, 
@@ -340,61 +425,94 @@ def tests():
     }
     # set seed
     random.seed(som_params['SEED'])
-    # set seed
-    # print("Cure:")
+    
+    tests = [
+        {
+            "name": "SOM (Fed)",
+            "server": partial(SOM_server, params=som_params), 
+            "device": partial(SOM_Device, params=som_params),
+        },
+        # {
+        #     "name": "KMeans (Fed)",
+        #     "server": partial(CURE_Server, cure_params=cure_params), 
+        #     "device": partial(K_Means_Device, params=params),
+        # },
+        # {
+        #     "name": "KMeans Carry (Fed)",
+        #     "server": partial(CURE_Server_Carry, cure_params=cure_params), 
+        #     "device": partial(K_Means_Device, params=params),
+        # },
+        # {
+        #     "name": "KMeans Keep (Fed)",
+        #     "server": partial(CURE_Server_Keep, cure_params=cure_params), 
+        #     "device": partial(K_Means_Device, params=params),
+        # },
+    ]
 
-    for level in collection.noice_levels:
-        for name in collection.data_sets_names:
-            count = collection.count_map[name]
-            # data_set = collection.get_set("blobs", "vhigh"),
-            num_of_devices = 100
-            pct_data_per_device = np.array([0.1] * num_of_devices)
-            perc_iid_per_device = np.array([0.5] * num_of_devices)
-            group_per_device    = np.round(np.linspace(0,count-1,num_of_devices))
-            number_of_rounds    = 4
-            num_devices_per_group_per_round = [({i:10 for i in range(count-1)})] * number_of_rounds
-            # print("Cure:", name + "-" + level)
-            # custom(
-            #     partial(CURE_Server, cure_params=cure_params), partial(K_Means_Device, params=params),
-            #     data_set = collection.get_set(name, level),
-            #     num_of_devices = num_of_devices,
-            #     pct_data_per_device = pct_data_per_device,
-            #     perc_iid_per_device = perc_iid_per_device,
-            #     group_per_device    = group_per_device,   
-            #     number_of_rounds    = number_of_rounds,   
-            #     num_devices_per_group_per_round = num_devices_per_group_per_round
-            # )
-            print("SOM:", name + "-" + level)
-            custom(
-                partial(SOM_server, params=som_params), partial(SOM_Device, params=som_params),
-                data_set = collection.get_set(name, level),
-                num_of_devices = num_of_devices,
-                pct_data_per_device = pct_data_per_device,
-                perc_iid_per_device = perc_iid_per_device,
-                group_per_device    = group_per_device,   
-                number_of_rounds    = number_of_rounds,   
-                num_devices_per_group_per_round = num_devices_per_group_per_round
-            )
+    k_means_servers = [{
+        "name": "",
+        "server": CURE_Server,
+    },
+    {
+        "name": " Carry",
+        "server": CURE_Server_Carry
+    },
+    {
+        "name": " Keep",
+        "server": CURE_Server_Keep
+    }]
+    for k in k_means_servers:
+        # Cure
+        params = {
+            "device min clusters": {"N_CLUSTERS": 3,
+                "MAX_ITERS": 100,
+                "N_INITS": 10,
+                "METRIC": "euclidean",
+                "TOLERANCE": None},
+            "device mid clusters": {"N_CLUSTERS": 10,
+                "MAX_ITERS": 100,
+                "N_INITS": 10,
+                "METRIC": "euclidean",
+                "TOLERANCE": None},
+            # "device max clusters": {"N_CLUSTERS": 20,
+            #     "MAX_ITERS": 100,
+            #     "N_INITS": 10,
+            #     "METRIC": "euclidean",
+            #     "TOLERANCE": None}
+        }
+        cure_params = {
+            "server min rep points": {"N_CLUSTERS": 3,
+                "N_REP_POINTS": 1,
+                "COMPRESSION": 0.05},
+            "server mid rep points": {"N_CLUSTERS": 3,
+                "N_REP_POINTS": 3,
+                "COMPRESSION": 0.05},
+            # "server max rep points": {"N_CLUSTERS": 3,
+            #     "N_REP_POINTS": 10,
+            #     "COMPRESSION": 0.05}
+        }
+        for device_params_name, device_params in params.items():
+            for server_params_name, server_params in cure_params.items():
+                tests.append({
+                    "name": "KMeans" + k["name"] + " - " + device_params_name + " - " + server_params_name + " (Fed)",
+                    "server": partial(k["server"], cure_params=server_params), 
+                    "device": partial(K_Means_Device, params=device_params),
+                })
 
-
+    return tests
 
 
 def main():
     cure()
 
 if  __name__ == "__main__":
-    # tests()
-    tests()
-    pass
-#     if s# ys.argv[1].upper() == 'SOM':
-#     print('IN SOM')
-#     #     # som()
-#     elif#  sys.argv[1].upper() == 'CURE':
-#     int('IN CURE')
-#     #     # cure()
-#     # else:
-# #         print("Add an argument to select the alg to run")Add a a systen argument to select the aargvelse:
-# # Add a a systen argument to select the aargvelse:
-#     # som()
-#     cure()
-#     # som()
+    import time
+    starttime = time.time()
+    
+    tests = create_tests()
+    results = run_tests(tests,
+        data_sets = collection.data_sets_names[-2:], levels = collection.noice_levels[-1:])
+    save_test_results(results)
+
+    delta = time.time() - starttime
+    print('That took {} seconds / {} minutes'.format(delta, delta/60))

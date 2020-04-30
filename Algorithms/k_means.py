@@ -152,8 +152,8 @@ class CURE_Server:
     def update_server(self, reports_from_devices):
         self.clusters_from_devices = np.vstack(reports_from_devices)
 
-    def run_on_server(self):
-        clusters_from_devices = self.clusters_from_devices
+    def run_on_server(self, clusters_from_devices = None):
+        if clusters_from_devices is None: clusters_from_devices = self.clusters_from_devices
         cure_instance = cure(clusters_from_devices, self._n_clusters, self._n_rep_points, self._compression)
         cure_instance.process()
         representors = cure_instance.get_representors()
@@ -175,4 +175,35 @@ class CURE_Server:
         labels = np.array([representor_to_clustering[label] for label in labels])
         return labels
 
-        
+class CURE_Server_Carry(CURE_Server):
+    prev_round_info = None
+    def update_server(self, reports_from_devices):
+        # Save current state before update
+        # print("previous varify clusters", self.clusters_from_devices)
+        self.prev_round_info = self.clusters_from_devices
+        # Now update
+        super().update_server(reports_from_devices)
+        # print("previous varify clusters", self.prev_round_info)
+    
+    def run_on_server(self):
+        # Combine last and current state
+        # print("device clusters", self.clusters_from_devices)
+        if self.prev_round_info is None:
+            self.prev_round_info = np.copy(self.clusters_from_devices)
+        # print("previous clusters", self.prev_round_info)
+        clusters = np.concatenate((self.clusters_from_devices, self.prev_round_info), axis=0)
+        # print("concat", clusters)
+        # clusters = None
+        # Okay now run as normal
+        super().run_on_server(clusters)
+
+class CURE_Server_Keep(CURE_Server):
+    prev_round_info = None
+    def update_server(self, reports_from_devices):
+        # Save current state before update
+        self.prev_round_info = self.clusters_from_devices
+        # Now update
+        super().update_server(reports_from_devices)
+        if self.prev_round_info is None:
+            self.prev_round_info = np.copy(self.clusters_from_devices)
+        self.clusters_from_devices = np.concatenate((self.clusters_from_devices, self.prev_round_info), axis=0)
