@@ -10,7 +10,13 @@ from collections import OrderedDict
 from functools import partial
 import matplotlib.pyplot as plt
 
+import random
+random.seed(242)
+np.random.rand(242)
+
 ENABLE_PLOTS = False
+ENABLE_PRINTS = False
+ENABLE_PROGRESS = True
 
 
 class DataSetCollection:
@@ -139,7 +145,7 @@ class Device:
     def update(self, update_data):
         self.alg.update_device(update_data)
 
-import random
+
 class Server:
     device_groups = []
 
@@ -206,7 +212,7 @@ class DeviceSuite:
     def run_rounds_with_accuracy(self, num_devices_per_group_per_round, data, labels):
         for num_devices_per_group in num_devices_per_group_per_round:
             self.server.run_round(num_devices_per_group)
-            print("Accuracy: ", self.accuracy(data, labels))
+            if ENABLE_PRINTS: print("Accuracy: ", self.accuracy(data, labels))
 
     def accuracy(self, data, labels):
         pred_labels = self.server.classify(data)
@@ -242,8 +248,8 @@ def basic(server_alg_class, device_alg_class):
 
     suite.run_rounds_with_accuracy(num_devices_per_group_per_round,data, labels)
 
-    print("Done Fed")
-    print("Accuracy: ", suite.accuracy(data, labels))
+    if ENABLE_PRINTS: print("Done Fed")
+    if ENABLE_PRINTS: print("Accuracy: ", suite.accuracy(data, labels))
 
 
 def asymptotic_decay(learning_rate, t, max_iter):
@@ -311,9 +317,9 @@ def custom(
 
     suite.run_rounds_with_accuracy(num_devices_per_group_per_round,data, labels)
 
-    print("Done Fed")
+    if ENABLE_PRINTS: print("Done Fed")
     acc = suite.accuracy(data, labels)
-    print("Accuracy: ", acc)
+    if ENABLE_PRINTS: print("Accuracy: ", acc)
     return acc
 
 
@@ -321,6 +327,9 @@ def run_test_and_save(
         result_dict,
         first_key,
         second_key,
+        progress_lock,
+        number_of_tests_finished,
+        number_of_tests,
         data_set_name,
         level,
         test,
@@ -332,7 +341,7 @@ def run_test_and_save(
         number_of_rounds,
         num_devices_per_group_per_round,
     ): 
-    print(test["name"] + ":", data_set_name + "-" + level)
+    if ENABLE_PRINTS: print(test["name"] + ":", data_set_name + "-" + level)
     result_dict[first_key][second_key].value = custom(
             test["server"], test["device"],
             data_set = data_set,
@@ -343,19 +352,30 @@ def run_test_and_save(
             number_of_rounds    = number_of_rounds,   
             num_devices_per_group_per_round = num_devices_per_group_per_round
         )
+    if ENABLE_PROGRESS: 
+        with progress_lock:
+            number_of_tests_finished.value += 1
+            print('Progress: {}/{} Complete \t {} \t {}'.format(number_of_tests_finished.value, number_of_tests, result_dict[first_key][second_key].value, test["name"] + ":" + data_set_name + "-" + level) )
 
 
 import multiprocessing 
 def run_tests(tests, data_sets = collection.data_sets_names, levels = collection.noice_levels):
     results_dict = OrderedDict()
+    progress_lock = multiprocessing.Lock()
+    number_of_tests = 0
+    number_of_tests_finished = multiprocessing.Value('i', 0)
 
     for data_set_name in data_sets:
         for level in levels:
             key_tests = OrderedDict()
             for test in tests:
                 key_tests[test["name"]] = multiprocessing.Value("d", 0.0, lock=False)
+                number_of_tests += 1
             key = (data_set_name,level)
             results_dict[key] = key_tests
+
+    if ENABLE_PROGRESS: 
+        print("Number of Tests: {}".format(number_of_tests))
 
     num_of_devices = 100
     pct_data_per_device = np.array([0.1] * num_of_devices)
@@ -379,6 +399,9 @@ def run_tests(tests, data_sets = collection.data_sets_names, levels = collection
                 p = multiprocessing.Process(target=run_test_and_save, args=(results_dict,
                     key,
                     test["name"],
+                    progress_lock,
+                    number_of_tests_finished,
+                    number_of_tests,
                     data_set_name,
                     level,
                     test,
@@ -396,8 +419,6 @@ def run_tests(tests, data_sets = collection.data_sets_names, levels = collection
             
     for process in processes:
         process.join()
-
-    print("results", results_dict)
     
     return results_dict
 
@@ -427,25 +448,10 @@ def create_tests():
     random.seed(som_params['SEED'])
     
     tests = [
-        {
-            "name": "SOM (Fed)",
-            "server": partial(SOM_server, params=som_params), 
-            "device": partial(SOM_Device, params=som_params),
-        },
         # {
-        #     "name": "KMeans (Fed)",
-        #     "server": partial(CURE_Server, cure_params=cure_params), 
-        #     "device": partial(K_Means_Device, params=params),
-        # },
-        # {
-        #     "name": "KMeans Carry (Fed)",
-        #     "server": partial(CURE_Server_Carry, cure_params=cure_params), 
-        #     "device": partial(K_Means_Device, params=params),
-        # },
-        # {
-        #     "name": "KMeans Keep (Fed)",
-        #     "server": partial(CURE_Server_Keep, cure_params=cure_params), 
-        #     "device": partial(K_Means_Device, params=params),
+        #     "name": "SOM (Fed)",
+        #     "server": partial(SOM_server, params=som_params), 
+        #     "device": partial(SOM_Device, params=som_params),
         # },
     ]
 
@@ -464,11 +470,11 @@ def create_tests():
     for k in k_means_servers:
         # Cure
         params = {
-            "device min clusters": {"N_CLUSTERS": 3,
-                "MAX_ITERS": 100,
-                "N_INITS": 10,
-                "METRIC": "euclidean",
-                "TOLERANCE": None},
+            # "device min clusters": {"N_CLUSTERS": 3,
+            #     "MAX_ITERS": 100,
+            #     "N_INITS": 10,
+            #     "METRIC": "euclidean",
+            #     "TOLERANCE": None},
             "device mid clusters": {"N_CLUSTERS": 10,
                 "MAX_ITERS": 100,
                 "N_INITS": 10,
@@ -484,9 +490,9 @@ def create_tests():
             "server min rep points": {"N_CLUSTERS": 3,
                 "N_REP_POINTS": 1,
                 "COMPRESSION": 0.05},
-            "server mid rep points": {"N_CLUSTERS": 3,
-                "N_REP_POINTS": 3,
-                "COMPRESSION": 0.05},
+            # "server mid rep points": {"N_CLUSTERS": 3,
+            #     "N_REP_POINTS": 3,
+            #     "COMPRESSION": 0.05},
             # "server max rep points": {"N_CLUSTERS": 3,
             #     "N_REP_POINTS": 10,
             #     "COMPRESSION": 0.05}
@@ -511,7 +517,7 @@ if  __name__ == "__main__":
     
     tests = create_tests()
     results = run_tests(tests,
-        data_sets = collection.data_sets_names[-2:], levels = collection.noice_levels[-1:])
+        data_sets = collection.data_sets_names[-2:], levels = collection.noice_levels[-2:])
     save_test_results(results)
 
     delta = time.time() - starttime

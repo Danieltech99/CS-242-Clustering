@@ -7,6 +7,7 @@ from sklearn.cluster import SpectralClustering
 from sklearn.cluster import KMeans
 from sklearn.cluster import AgglomerativeClustering
 from minisom import MiniSom  
+np.random.rand(242)
 
 class DataSetCollection:
     data = None

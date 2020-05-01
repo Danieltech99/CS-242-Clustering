@@ -189,7 +189,7 @@ class CURE_Server_Carry(CURE_Server):
         # Combine last and current state
         # print("device clusters", self.clusters_from_devices)
         if self.prev_round_info is None:
-            self.prev_round_info = np.copy(self.clusters_from_devices)
+            self.prev_round_info = self.clusters_from_devices
         # print("previous clusters", self.prev_round_info)
         clusters = np.concatenate((self.clusters_from_devices, self.prev_round_info), axis=0)
         # print("concat", clusters)
@@ -205,5 +205,5 @@ class CURE_Server_Keep(CURE_Server):
         # Now update
         super().update_server(reports_from_devices)
         if self.prev_round_info is None:
-            self.prev_round_info = np.copy(self.clusters_from_devices)
+            self.prev_round_info = self.clusters_from_devices
         self.clusters_from_devices = np.concatenate((self.clusters_from_devices, self.prev_round_info), axis=0)
