@@ -160,10 +160,10 @@ class CURE_Server:
         representors = cure_instance.get_representors()
         self.representors = representors
         self.server_clusters = np.vstack(representors)
-        clusters = cure_instance.get_clusters()
-        visualizer = cluster_visualizer()
-        visualizer.append_clusters(clusters, clusters_from_devices)
-        visualizer.show()
+        # clusters = cure_instance.get_clusters()
+        # visualizer = cluster_visualizer()
+        # visualizer.append_clusters(clusters, clusters_from_devices)
+        # visualizer.show()
 
     def get_reports_for_devices(self):
         return self.server_clusters

@@ -1,5 +1,3 @@
-Data Set (ARI),Type,KMeansKMeans Server - device mid clusters - server min rep points (Fed),KMeansKMeans Server Carry - device mid clusters - server min rep points (Fed),KMeansKMeans Server Keep - device mid clusters - server min rep points (Fed)
-blobs,vhigh,0.7779265100274944,0.8061579068293278,0.8043782144581503
-blobs,med,0.891694084720164,0.8971959032849713,0.8938914406594296
-blobs2,vhigh,0.9502790382283139,0.9514646956855313,0.94913716288987
-blobs2,med,0.9988002402888261,0.9988002402888261,0.9988002402888261
+Data Set (ARI),Type,KMeansKMeans Server -   -   (Fed)
+blobs,vhigh,0.7824881799904086
+blobs,med,0.8836292044728772
