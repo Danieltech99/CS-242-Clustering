@@ -212,3 +212,53 @@ class CURE_Server_Keep(CURE_Server):
         if self.prev_round_info is None:
             self.prev_round_info = self.clusters_from_devices
         self.clusters_from_devices = np.concatenate((self.clusters_from_devices, self.prev_round_info), axis=0)
+
+from sklearn.cluster import KMeans
+class KMeans_Server(CURE_Server):
+    current_model = None
+    def run_on_server(self, clusters_from_devices = None):
+        if clusters_from_devices is None: clusters_from_devices = self.clusters_from_devices
+
+        kmeans = KMeans(n_clusters=self._n_clusters, random_state=0).fit(clusters_from_devices)
+
+        representors = kmeans.cluster_centers_
+        self.representors = representors
+        self.server_clusters = np.vstack(representors)
+
+        self.current_model = kmeans
+    
+    def classify(self,data):
+        return self.current_model.predict(data)
+
+class KMeans_Server_Carry(KMeans_Server):
+    prev_round_info = None
+    def update_server(self, reports_from_devices):
+        # Save current state before update
+        # print("previous varify clusters", self.clusters_from_devices)
+        self.prev_round_info = self.clusters_from_devices
+        # Now update
+        super().update_server(reports_from_devices)
+        # print("previous varify clusters", self.prev_round_info)
+    
+    def run_on_server(self):
+        # Combine last and current state
+        # print("device clusters", self.clusters_from_devices)
+        if self.prev_round_info is None:
+            self.prev_round_info = self.clusters_from_devices
+        # print("previous clusters", self.prev_round_info)
+        clusters = np.concatenate((self.clusters_from_devices, self.prev_round_info), axis=0)
+        # print("concat", clusters)
+        # clusters = None
+        # Okay now run as normal
+        super().run_on_server(clusters)
+
+class KMeans_Server_Keep(KMeans_Server):
+    prev_round_info = None
+    def update_server(self, reports_from_devices):
+        # Save current state before update
+        self.prev_round_info = self.clusters_from_devices
+        # Now update
+        super().update_server(reports_from_devices)
+        if self.prev_round_info is None:
+            self.prev_round_info = self.clusters_from_devices
+        self.clusters_from_devices = np.concatenate((self.clusters_from_devices, self.prev_round_info), axis=0)

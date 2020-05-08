@@ -3,6 +3,7 @@ from abc import ABC,abstractmethod
 import numpy as np
 import math
 from collections import OrderedDict 
+import threading
 
 # Data Sets (x4)
 # 5 levels of noice per data set
@@ -27,20 +28,38 @@ class DataSetCollection:
     data = None
     labeled_data = None
     noice_levels = ["vhigh", "high", "med", "low", "vlow"]
-    data_sets_names = ["moons", "circles", "longblobs", "blobs"]
+    # data_sets_names = ["moons", "circles", "longblobs", "blobs", "blobs2", "circle-grouped", "blobs-grouped"]
+    data_sets_names = ["blobs-grouped"]
+    data_sets_names_validate = ["blobs", "blobs2", "circle", "blobs"]
     count_map = {
         "circles" : 2, 
         "moons": 2, 
         "blobs": 3, 
-        "longblobs": 3
+        "longblobs": 3,
+        "blobs2": 3,
+        "circle-grouped": 4,
+        "blobs-grouped": 10,
+    }
+    file_map = {
+        "moons" : ("data", "circles"),
+        "circles": ("data", "circles"),
+        "longblobs": ("data", "longblobs"),
+        "blobs": ("data", "blobs"),
+        "blobs2": ("data", "blobs2"),
+        "circle-grouped": ("data_grouped", "circle"),
+        "blobs-grouped": ("data_grouped", "blobs"),
     }
 
     def __init__(self):
         self.data = np.load("Data/sklearn_data.npz") # update for path
         self.labeled_data = np.load("Data/sklearn_labels.npz") # update for path
+        self.data_grouped = np.load("Data/multigroup_data.npz") # update for path
+        self.labeled_data_grouped = np.load("Data/multigroup_labels.npz") # update for path
     
     def construct_key(self, name, noice_level):
-        assert(name in self.data_sets_names)
+        if name not in self.data_sets_names_validate:
+            print("INVALID NAME: ", name)
+        assert(name in self.data_sets_names_validate)
         assert(noice_level in self.noice_levels)
         return name + "_" + noice_level + "_" + "noise"
     
@@ -48,10 +67,18 @@ class DataSetCollection:
         return self.get_data_set(name, noice_level), self.get_label_set(name, noice_level)
 
     def get_data_set(self, name, noice_level):
-        return self.data[self.construct_key(name,noice_level)][::4]
+        location,key = self.file_map[name]
+        data_source = getattr(self, location)
+        res = data_source[self.construct_key(key,noice_level)][::4]
+        print("res", res)
+        return res
     
     def get_label_set(self, name, noice_level):
-        return self.labeled_data[self.construct_key(name,noice_level)][::4]
+        location,key = self.file_map[name]
+        data_source = getattr(self, "labeled_"+location)
+        res = data_source[self.construct_key(key,noice_level)][::4]
+        print("res_labels", res)
+        return res
 
 class DataSet:
     data = None
@@ -286,7 +313,7 @@ def som():
     random.seed(params['SEED'])
     basic(partial(SOM_server, params=params), partial(SOM_Device, params=params))
 
-from Algorithms.k_means import CURE_Server,K_Means_Device,CURE_Server_Carry,CURE_Server_Keep
+from Algorithms.k_means import CURE_Server,K_Means_Device,CURE_Server_Carry,CURE_Server_Keep, KMeans_Server, KMeans_Server_Carry, KMeans_Server_Keep
 def cure():
     params = {"N_CLUSTERS": 10,
           "MAX_ITERS": 100,
@@ -435,11 +462,12 @@ def run_tests(tests, data_sets = collection.data_sets_names, levels = collection
                     num_devices_per_group_per_round,))
                 processes.append(p)
                 p.start()
+                p.join()
                 
                 # results_dict[key][test["name"]] = acc
             
-    for process in processes:
-        process.join()
+    # for process in processes:
+    #     process.join()
     
     return results_dict
 
@@ -469,18 +497,31 @@ def create_tests():
         # },
     ]
 
-    k_means_servers = [{
-        "name": "",
-        "server": CURE_Server,
-    },
+    k_means_servers = [
+    #     {
+    #     "name": "",
+    #     "server": CURE_Server,
+    # },
+    # {
+    #     "name": " Carry",
+    #     "server": CURE_Server_Carry
+    # },
+    # {
+    #     "name": " Keep",
+    #     "server": CURE_Server_Keep
+    # },
     {
-        "name": " Carry",
-        "server": CURE_Server_Carry
+        "name": "KMeans Server",
+        "server": KMeans_Server
     },
-    {
-        "name": " Keep",
-        "server": CURE_Server_Keep
-    }
+    # {
+    #     "name": "KMeans Server Carry",
+    #     "server": KMeans_Server_Carry
+    # },
+    # {
+    #     "name": "KMeans Server Keep",
+    #     "server": KMeans_Server_Keep
+    # }
     ]
     for k in k_means_servers:
         # Cure
@@ -565,11 +606,12 @@ def evaluate_accuracy_evolution():
     tests = create_tests()
 
     results = run_tests(tests,
-        data_sets = collection.data_sets_names[-1:], 
-        levels = collection.noice_levels[-3:-1],
+        data_sets = collection.data_sets_names, 
+        levels = collection.noice_levels[:-1],
         number_of_rounds = 8)
     
     # print("round acc", results)
+    save_test_results(results)
 
     if ENABLE_ROUND_PROGRESS_PLOT: 
         plot_rounds(results)
