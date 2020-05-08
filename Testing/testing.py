@@ -14,10 +14,13 @@ import random
 random.seed(242)
 np.random.rand(242)
 
-ENABLE_PLOTS = False
+ENABLE_PLOTS = True
 ENABLE_PRINTS = False
 ENABLE_PROGRESS = True
 ENABLE_ROUND_PROGRESS_PLOT = False
+
+CURRENT_FILE_NAME = None
+
 
 
 class DataSetCollection:
@@ -212,19 +215,22 @@ class DeviceSuite:
 
     def run_rounds_with_accuracy(self, num_devices_per_group_per_round, data, labels):
         round_accs = []
+        run_num = 1
         for num_devices_per_group in num_devices_per_group_per_round:
             self.server.run_round(num_devices_per_group)
             if ENABLE_ROUND_PROGRESS_PLOT or ENABLE_PRINTS: 
-                acc = self.accuracy(data, labels)
+                acc = self.accuracy(data, labels, run_num)
                 round_accs.append(acc)
             if ENABLE_PRINTS: print("Accuracy: ", acc)
+            run_num += 1
         return round_accs
 
-    def accuracy(self, data, labels):
+    def accuracy(self, data, labels, run_num = 1):
         pred_labels = self.server.classify(data)
         if ENABLE_PLOTS:
             plt.scatter(data[:, 0], data[:, 1], c=pred_labels, s=1)
-            plt.show()
+            # plt.show()
+            plt.savefig('Plots/' + CURRENT_FILE_NAME + "-round-" + str(run_num) + '.png')
         return metrics.adjusted_rand_score(labels, pred_labels)
 
 
@@ -347,7 +353,9 @@ def run_test_and_save(
         number_of_rounds,
         num_devices_per_group_per_round,
     ): 
+    global CURRENT_FILE_NAME
     if ENABLE_PRINTS: print(test["name"] + ":", data_set_name + "-" + level)
+    CURRENT_FILE_NAME = test["name"] + ":" + data_set_name + "-" + level
     (result_dict["end"].value,round_accs) = custom(
             test["server"], test["device"],
             data_set = data_set,
