@@ -17,6 +17,7 @@ np.random.rand(242)
 ENABLE_PLOTS = False
 ENABLE_PRINTS = False
 ENABLE_PROGRESS = True
+ENABLE_ROUND_PROGRESS_PLOT = False
 
 
 class DataSetCollection:
@@ -210,9 +211,14 @@ class DeviceSuite:
             self.server.run_round(num_devices_per_group)
 
     def run_rounds_with_accuracy(self, num_devices_per_group_per_round, data, labels):
+        round_accs = []
         for num_devices_per_group in num_devices_per_group_per_round:
             self.server.run_round(num_devices_per_group)
-            if ENABLE_PRINTS: print("Accuracy: ", self.accuracy(data, labels))
+            if ENABLE_ROUND_PROGRESS_PLOT or ENABLE_PRINTS: 
+                acc = self.accuracy(data, labels)
+                round_accs.append(acc)
+            if ENABLE_PRINTS: print("Accuracy: ", acc)
+        return round_accs
 
     def accuracy(self, data, labels):
         pred_labels = self.server.classify(data)
@@ -315,12 +321,12 @@ def custom(
     # number_of_rounds = 10
     # num_devices_per_group_per_round = [{0: 10, 1:10, 2:10}] * number_of_rounds
 
-    suite.run_rounds_with_accuracy(num_devices_per_group_per_round,data, labels)
+    round_accs = suite.run_rounds_with_accuracy(num_devices_per_group_per_round,data, labels)
 
     if ENABLE_PRINTS: print("Done Fed")
     acc = suite.accuracy(data, labels)
     if ENABLE_PRINTS: print("Accuracy: ", acc)
-    return acc
+    return (acc,round_accs)
 
 
 def run_test_and_save(
@@ -342,7 +348,7 @@ def run_test_and_save(
         num_devices_per_group_per_round,
     ): 
     if ENABLE_PRINTS: print(test["name"] + ":", data_set_name + "-" + level)
-    result_dict[first_key][second_key].value = custom(
+    (result_dict["end"].value,round_accs) = custom(
             test["server"], test["device"],
             data_set = data_set,
             num_of_devices = num_of_devices,
@@ -352,15 +358,19 @@ def run_test_and_save(
             number_of_rounds    = number_of_rounds,   
             num_devices_per_group_per_round = num_devices_per_group_per_round
         )
+    if ENABLE_ROUND_PROGRESS_PLOT: 
+        result_dict["rounds"].extend(round_accs)
     if ENABLE_PROGRESS: 
         with progress_lock:
             number_of_tests_finished.value += 1
-            print('Progress: {}/{} Complete \t {} \t {}'.format(number_of_tests_finished.value, number_of_tests, result_dict[first_key][second_key].value, test["name"] + ":" + data_set_name + "-" + level) )
+            print('Progress: {}/{} Complete \t {} \t {}'.format(number_of_tests_finished.value, number_of_tests, result_dict["end"].value, test["name"] + ":" + data_set_name + "-" + level) )
 
 
 import multiprocessing 
-def run_tests(tests, data_sets = collection.data_sets_names, levels = collection.noice_levels):
+def run_tests(tests, data_sets = collection.data_sets_names, levels = collection.noice_levels, number_of_rounds    = 4):
     results_dict = OrderedDict()
+    manager = multiprocessing.Manager()
+    
     progress_lock = multiprocessing.Lock()
     number_of_tests = 0
     number_of_tests_finished = multiprocessing.Value('i', 0)
@@ -369,7 +379,10 @@ def run_tests(tests, data_sets = collection.data_sets_names, levels = collection
         for level in levels:
             key_tests = OrderedDict()
             for test in tests:
-                key_tests[test["name"]] = multiprocessing.Value("d", 0.0, lock=False)
+                key_tests[test["name"]] = {
+                    "end": multiprocessing.Value("d", 0.0, lock=False),
+                    "rounds": manager.list()
+                }
                 number_of_tests += 1
             key = (data_set_name,level)
             results_dict[key] = key_tests
@@ -380,7 +393,7 @@ def run_tests(tests, data_sets = collection.data_sets_names, levels = collection
     num_of_devices = 100
     pct_data_per_device = np.array([0.1] * num_of_devices)
     perc_iid_per_device = np.array([0.5] * num_of_devices)
-    number_of_rounds    = 4
+    
 
     processes = []
 
@@ -396,7 +409,7 @@ def run_tests(tests, data_sets = collection.data_sets_names, levels = collection
             key = (data_set_name,level)
             
             for test in tests:
-                p = multiprocessing.Process(target=run_test_and_save, args=(results_dict,
+                p = multiprocessing.Process(target=run_test_and_save, args=(results_dict[key][test["name"]],
                     key,
                     test["name"],
                     progress_lock,
@@ -422,13 +435,6 @@ def run_tests(tests, data_sets = collection.data_sets_names, levels = collection
     
     return results_dict
 
-import csv
-def save_test_results(results):
-    with open('results.csv', 'w', newline='') as csvfile:
-        r_file = csv.writer(csvfile, delimiter=',')
-        r_file.writerow(["Data Set (ARI)", "Type"] + list(list(results.values())[0].keys()))
-        for data_pair,pair_results in results.items():
-            r_file.writerow(list(data_pair) + [i.value for i in list(pair_results.values())])
 
 def create_tests():
     input_len = 2 # this is the length of each data point
@@ -466,7 +472,8 @@ def create_tests():
     {
         "name": " Keep",
         "server": CURE_Server_Keep
-    }]
+    }
+    ]
     for k in k_means_servers:
         # Cure
         params = {
@@ -508,17 +515,64 @@ def create_tests():
     return tests
 
 
+import csv
+def save_test_results(results):
+    with open('results.csv', 'w', newline='') as csvfile:
+        r_file = csv.writer(csvfile, delimiter=',')
+        r_file.writerow(["Data Set (ARI)", "Type"] + list(list(results.values())[0].keys()))
+        for data_pair,pair_results in results.items():
+            r_file.writerow(list(data_pair) + [i["end"].value for i in list(pair_results.values())])
+
+def plot_rounds(results):
+    fig, axs = plt.subplots(2)
+    i = 0
+    for data_pair,pair_results in results.items():
+        file_name = ' '.join(data_pair)
+        axs[i].set_title(file_name)
+        for name,data in list(pair_results.items()):
+            x = list(range(1, len(data["rounds"])+1))
+            y = data["rounds"]
+            # print("plot", name)
+            # print("x:", x)
+            # print("y:", y)
+            axs[i].plot(x,y,label=name)
+        i+=1
+        plt.legend(loc=0,bbox_to_anchor=(1,0.5))
+        # plt.savefig('{}.png'.format(file_name), bbox_inches='tight')
+    plt.savefig('rounds-algs.png', bbox_inches='tight')
+
+
 def main():
     cure()
+
+def run_all_tests():
+    tests = create_tests()
+    results = run_tests(tests,
+        data_sets = collection.data_sets_names[-2:], levels = collection.noice_levels[-2:])
+    save_test_results(results)
+
+def evaluate_accuracy_evolution():
+    global ENABLE_ROUND_PROGRESS_PLOT
+    ENABLE_ROUND_PROGRESS_PLOT = True
+    tests = create_tests()
+
+    results = run_tests(tests,
+        data_sets = collection.data_sets_names[-1:], 
+        levels = collection.noice_levels[-3:-1],
+        number_of_rounds = 8)
+    
+    # print("round acc", results)
+
+    if ENABLE_ROUND_PROGRESS_PLOT: 
+        plot_rounds(results)
+
 
 if  __name__ == "__main__":
     import time
     starttime = time.time()
     
-    tests = create_tests()
-    results = run_tests(tests,
-        data_sets = collection.data_sets_names[-2:], levels = collection.noice_levels[-2:])
-    save_test_results(results)
+    # run_all_tests()
+    evaluate_accuracy_evolution()
 
     delta = time.time() - starttime
     print('That took {} seconds / {} minutes'.format(delta, delta/60))
