@@ -15,210 +15,15 @@ import random
 random.seed(242)
 np.random.rand(242)
 
-ENABLE_PLOTS = True
+ENABLE_PLOTS = False
 ENABLE_PRINTS = False
 ENABLE_PROGRESS = True
 ENABLE_ROUND_PROGRESS_PLOT = False
 
 CURRENT_FILE_NAME = None
+from Testing.data import DataSetCollection, DataSet, DataSampler
+from Testing.devices import Device, Server
 
-
-
-class DataSetCollection:
-    data = None
-    labeled_data = None
-    noice_levels = ["vhigh", "high", "med", "low", "vlow"]
-    # data_sets_names = ["moons", "circles", "longblobs", "blobs", "blobs2", "circle-grouped", "blobs-grouped"]
-    data_sets_names = ["blobs-grouped"]
-    data_sets_names_validate = ["blobs", "blobs2", "circle", "blobs"]
-    count_map = {
-        "circles" : 2, 
-        "moons": 2, 
-        "blobs": 3, 
-        "longblobs": 3,
-        "blobs2": 3,
-        "circle-grouped": 4,
-        "blobs-grouped": 10,
-    }
-    file_map = {
-        "moons" : ("data", "circles"),
-        "circles": ("data", "circles"),
-        "longblobs": ("data", "longblobs"),
-        "blobs": ("data", "blobs"),
-        "blobs2": ("data", "blobs2"),
-        "circle-grouped": ("data_grouped", "circle"),
-        "blobs-grouped": ("data_grouped", "blobs"),
-    }
-
-    def __init__(self):
-        self.data = np.load("Data/sklearn_data.npz") # update for path
-        self.labeled_data = np.load("Data/sklearn_labels.npz") # update for path
-        self.data_grouped = np.load("Data/multigroup_data.npz") # update for path
-        self.labeled_data_grouped = np.load("Data/multigroup_labels.npz") # update for path
-    
-    def construct_key(self, name, noice_level):
-        if name not in self.data_sets_names_validate:
-            print("INVALID NAME: ", name)
-        assert(name in self.data_sets_names_validate)
-        assert(noice_level in self.noice_levels)
-        return name + "_" + noice_level + "_" + "noise"
-    
-    def get_set(self, name, noice_level):
-        return self.get_data_set(name, noice_level), self.get_label_set(name, noice_level)
-
-    def get_data_set(self, name, noice_level):
-        location,key = self.file_map[name]
-        data_source = getattr(self, location)
-        res = data_source[self.construct_key(key,noice_level)][::4]
-        print("res", res)
-        return res
-    
-    def get_label_set(self, name, noice_level):
-        location,key = self.file_map[name]
-        data_source = getattr(self, "labeled_"+location)
-        res = data_source[self.construct_key(key,noice_level)][::4]
-        print("res_labels", res)
-        return res
-
-class DataSet:
-    data = None
-    labeled_data = None
-
-    def __init__(self, data, labels):
-        self.data = data
-        self.labeled_data = labels
-    
-    def add_label_to_data(self):
-        return np.column_stack((self.data,self.labeled_data))
-    
-    def get_indices(self):
-        return np.arange(0, self.data.shape[0])
-    
-    def get_indices_for_label(self, label_num):
-        return self.get_indices()[self.labeled_data == label_num]
-    
-
-# SAMPLERS
-
-class DataSampler:
-    def sample(self, dataset_class_instance, num_devices, pct_data_per_device, perc_iid_per_device, group_per_device): 
-        assert(pct_data_per_device.size == num_devices)
-        assert(perc_iid_per_device.size == num_devices)
-        assert(group_per_device.size == num_devices)
-        c = np.dstack((pct_data_per_device,perc_iid_per_device,group_per_device))[0]
-
-        # device_indices = []
-        groups = {}
-        for [data_pct, perc_iid, group] in c:
-            assert(data_pct >= 0 and data_pct <= 1)
-            assert(perc_iid >= 0 and perc_iid <= 1)
-            iid_indices_population = dataset_class_instance.get_indices()
-            num_iid_items = math.floor(iid_indices_population.size * data_pct * perc_iid)
-            iid_indices_sample = np.random.choice(iid_indices_population, size=num_iid_items, replace=False)
-            
-            num_noniid_items = math.floor(iid_indices_population.size * data_pct * (1-perc_iid))
-            non_iid_indices_population = dataset_class_instance.get_indices_for_label(group)
-            non_iid_indices_sample = np.random.choice(non_iid_indices_population, size=num_noniid_items, replace=False)
-
-            if group not in groups:
-                groups[group] = []
-            final_indicies = np.unique(np.concatenate((iid_indices_sample,non_iid_indices_sample),0))
-            data_subset = [dataset_class_instance.data[i] for i in final_indicies]
-            groups[group].append(data_subset)
-        return groups
-
-
-
-# Algorithm Interfaces 
-
-class DeviceAlg:
-    # In chronological order of calling
-    def __init__(self, indicies_for_data_subset):
-        pass
-    def run_on_device(self):
-        pass
-    def get_report_for_server(self):
-        updates_for_server = []
-        return updates_for_server
-    def update_device(self, reports_from_server):
-        pass
-
-class ServerAlg:
-    # In chronological order of calling
-    def __init__(self):
-        pass
-    def update_server(self, reports_from_devices):
-        pass
-    def run_on_server(self):
-        pass
-    def get_reports_for_devices(self):
-        updates_for_devices = []
-        return updates_for_devices
-
-# DEVICES
-
-class Device:
-    # data = np.array([], ndmin=2)
-    indicies = np.array([])
-
-    def __init__(self, alg_device_class, indicies, id_num = None):
-        # self.data = data
-        # Passes starting data to alg through constructor
-        self.alg = alg_device_class(np.array(indicies), id_num=id_num)
-        self.indicies = np.array(indicies)
-    
-    def run(self):
-        self.alg.run_on_device()
-
-    def report_back_to_server(self):
-        return self.alg.get_report_for_server()
-
-    def update(self, update_data):
-        self.alg.update_device(update_data)
-
-
-class Server:
-    device_groups = []
-
-    def classify(self, data):
-        return self.alg.classify(data)
-
-    def __init__(self, alg_server_class, device_groups):
-        self.alg = alg_server_class()
-        self.device_groups = device_groups
-    
-    def run_round(self, num_devices_per_group_dict):
-        devices = []
-        for group,num_of_devices in num_devices_per_group_dict.items():
-            devices += random.sample(self.device_groups[group],num_of_devices)
-        reports = self.run_devices(devices)
-        self.update(reports)
-        self.run()
-        update_for_devices = self.get_reports_for_devices()
-        self.send_updates_to_device(devices, update_for_devices)
-
-
-    def run_devices(self, devices):
-        reports = []
-        for device in devices:
-            device.run()
-            report = device.report_back_to_server()
-            reports.append(report)
-        return reports
-
-    def run(self):
-        self.alg.run_on_server()
-    
-    def update(self, reports):
-        # aggregates all the device feedback
-        self.alg.update_server(reports)
-    
-    def get_reports_for_devices(self):
-        return self.alg.get_reports_for_devices()
-
-    def send_updates_to_device(self, devices, update_for_devices): # report
-        for device in devices:
-            device.update(update_for_devices)
 
 from sklearn import metrics
 class DeviceSuite:
@@ -261,6 +66,9 @@ class DeviceSuite:
         return metrics.adjusted_rand_score(labels, pred_labels)
 
 
+
+
+
 # algorithm
 # dataset
 # number of devices
@@ -270,26 +78,6 @@ class DeviceSuite:
 # number of devices per group
 
 collection = DataSetCollection()
-
-def basic(server_alg_class, device_alg_class):
-    data, labels = collection.get_set("blobs", "vhigh")
-    dataset = DataSet(data, labels)    
-    
-    num_of_devices = 100
-    pct_data_per_device = np.array([0.1] * num_of_devices) 
-    perc_iid_per_device = np.array([0.9] * num_of_devices) 
-    group_per_device    = np.round(np.linspace(0,2,num_of_devices))
-
-    suite = DeviceSuite(server_alg_class, device_alg_class, dataset, num_of_devices, pct_data_per_device, perc_iid_per_device, group_per_device)
-
-    number_of_rounds = 10
-    num_devices_per_group_per_round = [{0: 10, 1:10, 2:10}] * number_of_rounds
-
-    suite.run_rounds_with_accuracy(num_devices_per_group_per_round,data, labels)
-
-    if ENABLE_PRINTS: print("Done Fed")
-    if ENABLE_PRINTS: print("Accuracy: ", suite.accuracy(data, labels))
-
 
 def asymptotic_decay(learning_rate, t, max_iter):
     return learning_rate / (1+t/(max_iter/2))
@@ -333,7 +121,7 @@ def cure():
 def custom(
         server_alg_class, device_alg_class,
         data_set = collection.get_set("blobs", "vhigh"),
-        num_of_devices = 100,
+        num_of_devices = 1000,
         pct_data_per_device = np.array([0.1] * 100),
         perc_iid_per_device = np.array([0.9] * 100),
         group_per_device    = np.round(np.linspace(0,2,100)),
@@ -425,7 +213,7 @@ def run_tests(tests, data_sets = collection.data_sets_names, levels = collection
     if ENABLE_PROGRESS: 
         print("Number of Tests: {}".format(number_of_tests))
 
-    num_of_devices = 100
+    num_of_devices = 1000
     pct_data_per_device = np.array([0.1] * num_of_devices)
     perc_iid_per_device = np.array([0.5] * num_of_devices)
     
@@ -462,12 +250,12 @@ def run_tests(tests, data_sets = collection.data_sets_names, levels = collection
                     num_devices_per_group_per_round,))
                 processes.append(p)
                 p.start()
-                p.join()
+                # p.join()
                 
                 # results_dict[key][test["name"]] = acc
             
-    # for process in processes:
-    #     process.join()
+    for process in processes:
+        process.join()
     
     return results_dict
 
@@ -514,14 +302,14 @@ def create_tests():
         "name": "KMeans Server",
         "server": KMeans_Server
     },
-    # {
-    #     "name": "KMeans Server Carry",
-    #     "server": KMeans_Server_Carry
-    # },
-    # {
-    #     "name": "KMeans Server Keep",
-    #     "server": KMeans_Server_Keep
-    # }
+    {
+        "name": "KMeans Server Carry",
+        "server": KMeans_Server_Carry
+    },
+    {
+        "name": "KMeans Server Keep",
+        "server": KMeans_Server_Keep
+    }
     ]
     for k in k_means_servers:
         # Cure
@@ -573,8 +361,10 @@ def save_test_results(results):
             r_file.writerow(list(data_pair) + [i["end"].value for i in list(pair_results.values())])
 
 def plot_rounds(results):
-    fig, axs = plt.subplots(2)
+    fig, axs = plt.subplots(len(results.keys()))
     i = 0
+    print("results keys", results.keys())
+    print("results item keys", results[list(results.keys())[0]].keys())
     for data_pair,pair_results in results.items():
         file_name = ' '.join(data_pair)
         axs[i].set_title(file_name)
@@ -597,7 +387,7 @@ def main():
 def run_all_tests():
     tests = create_tests()
     results = run_tests(tests,
-        data_sets = collection.data_sets_names[-2:], levels = collection.noice_levels[-2:])
+        data_sets = collection.data_sets_names, levels = collection.noice_levels)
     save_test_results(results)
 
 def evaluate_accuracy_evolution():
@@ -606,7 +396,7 @@ def evaluate_accuracy_evolution():
     tests = create_tests()
 
     results = run_tests(tests,
-        data_sets = collection.data_sets_names, 
+        data_sets = collection.data_sets_names[0:2], 
         levels = collection.noice_levels[:-1],
         number_of_rounds = 8)
     
