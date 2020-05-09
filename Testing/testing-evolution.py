@@ -24,76 +24,15 @@ ENABLE_PROGRESS = True
 ENABLE_ROUND_PROGRESS_PLOT = False
 MULTIPROCESSED = True
 
-CURRENT_FILE_NAME = None
-
 from Testing.data import DataSetCollection, DataSet, DataSampler
 from Testing.devices import Device, Server
 import Testing.analysis as analysis
-from Algorithms.k_means import CURE_Server,K_Means_Device,CURE_Server_Carry,CURE_Server_Keep, KMeans_Server, KMeans_Server_Carry, KMeans_Server_Keep
 
-collection = DataSetCollection()
+from Testing.config import layers,collection
+
 
 def asymptotic_decay(learning_rate, t, max_iter):
     return learning_rate / (1+t/(max_iter/2))
-
-
-
-class DeviceSuite:
-    server = None
-    devices = []
-    groups = {}
-
-    def __init__(
-            self, 
-            server_alg_class, 
-            device_alg_class, 
-            dataset_class_instance, 
-            num_devices, 
-            pct_data_per_device, 
-            perc_iid_per_device, 
-            group_per_device
-        ):
-        self.dataset_class_instance = dataset_class_instance
-        sampler_instance = DataSampler()
-        data = sampler_instance.sample(dataset_class_instance, num_devices, pct_data_per_device, perc_iid_per_device, group_per_device)
-        # assert(len(data) == num_devices)
-        for group, devices in data.items():
-            self.groups[group] = [Device(device_alg_class, indicies, id_num=(group*10000+i)) for i,indicies in enumerate(devices)]
-        
-        self.server = Server(server_alg_class, self.groups)
-    
-    def run_rounds(self, num_devices_per_group_per_round):
-        # list of dictionaries of integers
-        for num_devices_per_group in num_devices_per_group_per_round:
-            self.server.run_round(num_devices_per_group)
-
-    def run_rounds_with_accuracy(self, num_devices_per_group_per_round):
-        round_accs = []
-        run_num = 1
-        for num_devices_per_group in num_devices_per_group_per_round:
-            self.server.run_round(num_devices_per_group)
-            if ENABLE_ROUND_PROGRESS_PLOT or ENABLE_PRINTS: 
-                acc = self.accuracy(run_num)
-                round_accs.append(acc)
-            if ENABLE_PRINTS: print("Accuracy: ", acc)
-            run_num += 1
-        return round_accs
-
-    def accuracy(self, run_num = 1):
-        data = self.dataset_class_instance.data
-        labels = self.dataset_class_instance.labeled_data
-        pred_labels = self.server.classify(data)
-        if ENABLE_PLOTS:
-            plt.scatter(data[:, 0], data[:, 1], c=pred_labels, s=1)
-            # plt.show()
-            plt.savefig('Plots/' + CURRENT_FILE_NAME + "-round-" + str(run_num) + '.png')
-        return metrics.adjusted_rand_score(labels, pred_labels)
-
-
-
-
-
-
 
 
 def custom(
@@ -107,40 +46,26 @@ def custom(
     return (acc,round_accs)
 
 
-def run_test_and_save(
-        *,
-        result_dict,
-        progress_lock,
-        number_of_tests_finished,
-        number_of_tests,
-        data_set_name,
-        level,
-        test,
-        **kwargs
-    ): 
-    # Adds prints and progress to testing for multiprocessing
-    global CURRENT_FILE_NAME
-    if ENABLE_PRINTS: print(test["name"] + ":", data_set_name + "-" + level)
-    CURRENT_FILE_NAME = test["name"] + ":" + data_set_name + "-" + level
-    (result_dict["end"].value,round_accs) = custom(
-            server_alg_class = test["server"], 
-            device_alg_class = test["device"],
-            **kwargs
-        )
-    if ENABLE_ROUND_PROGRESS_PLOT: 
-        result_dict["rounds"].extend(round_accs)
-    if ENABLE_PROGRESS: 
-        with progress_lock:
-            number_of_tests_finished.value += 1
-            print('Progress: {}/{} Complete \t {} \t {}'.format(number_of_tests_finished.value, number_of_tests, result_dict["end"].value, test["name"] + ":" + data_set_name + "-" + level) )
-
-
 class MultiProcessing:
     def __init__(self, MULTIPROCESSED = True):
-        self.MULTIPROCESSED = MULTIPROCESSED
+        self.MULTIPROCESSED = MULTIPROCESSED and False
         self.manager = multiprocessing.Manager()
+
+    def run_single(self, *, 
+            result_dict, suite,test, 
+            progress_lock,number_of_tests,number_of_tests_finished
+        ):
+        name = suite["name"] + ": " + test["name"]
+        
+        d = DeviceSuite(suite, test)
+        result_dict["rounds"].extend(d.run_rounds_with_accuracy())
+        result_dict["end"].value = d.accuracy()
+        
+        with progress_lock:
+            number_of_tests_finished.value += 1
+            print('Progress: {}/{} Complete \t {} \t {}'.format(number_of_tests_finished.value, number_of_tests, result_dict["end"].value, name) )
     
-    def run(self, construction, target = run_test_and_save, **kwargs):
+    def run(self, construction, **kwargs):
         # Take a list of process specs and run in parallel
         (number_of_tests, specs, results_dict) = construction
         processes = []
@@ -152,7 +77,7 @@ class MultiProcessing:
             kwargs["number_of_tests"] = number_of_tests
             kwargs["number_of_tests_finished"] = number_of_tests_finished
 
-            p = multiprocessing.Process(target=target, kwargs=kwargs)
+            p = multiprocessing.Process(target=self.run_single, kwargs=kwargs)
             processes.append(p)
             p.start()
             if not self.MULTIPROCESSED: p.join()
@@ -173,37 +98,27 @@ class MultiProcessing:
         res = self.constructProcessTests(*args, **kwargs)
         return self.run(res, **kwargs)
 
-    def constructProcessTests(self, tests, data_sets = collection.data_sets_names, levels = collection.noice_levels, number_of_rounds    = 4,**kwargs):
+    def constructProcessTests(self, suites, tests,**kwargs):
         # Create a list of process specs
         number_of_tests = 0
         specs = []
 
         results_dict = OrderedDict()
-        for data_set_name in data_sets:
-
-            count = collection.count_map[data_set_name]
-
-            for level in levels:
-                key = (data_set_name,level)
-                results_dict[key] = OrderedDict()
-                
-                for test in tests:
-                    number_of_tests += 1
-                    results_dict[key][test["name"]] = self.createResultObjItem()
-                    specs.append(dict(
-                            result_dict = results_dict[key][test["name"]],
-                            data_set = collection.get_set(data_set_name, level),
-                            # progress_lock = progress_lock,
-                            # number_of_tests_finished = number_of_tests_finished,
-                            # number_of_tests = number_of_tests,
-                            data_set_name = data_set_name,
-                            level = level,
-                            test = test,
-                            # suite = suite
-                        ))
+        for suite in suites:
+            key = suite["name"]
+            results_dict[key] = OrderedDict()
+            
+            for test in tests:
+                number_of_tests += 1
+                results_dict[key][test["name"]] = self.createResultObjItem()
+                specs.append(dict(
+                        result_dict = results_dict[key][test["name"]],
+                        suite = suite,
+                        test = test
+                    ))
         return number_of_tests, specs, results_dict
 
-from config import layers
+
 def smooth(timeline):
     # add missing keys
     timeline = dict(timeline)
@@ -224,7 +139,6 @@ def smooth(timeline):
             last_time = time
             continue
         r = range(last_time + 1, time)
-        print("range", last_time, time)
         l = len(r)
         for t in r:
             timeline[t] = {}
@@ -234,26 +148,26 @@ def smooth(timeline):
         last_time = time
     return timeline
 def apply_down(obj,*args,**kwargs):
-    for key,value in obj:
+    for key,value in obj.items():
         if callable(value):
             obj[key] = value(*args, **kwargs)
-        if type(obj[key]) is dict:
-            obj[key] = apply_down(obj[key],*args,**kwargs)
+        # if type(obj[key]) is dict:
+        #     obj[key] = apply_down(obj[key],*args,**kwargs)
     return obj
 def create_suites(layers):
     suites = []
-    data_sets = levels = layers["datasets"]
-    for data_set_name in data_sets:
-        levels = layers["noice"](data_set_name)
-        for level in levels:
-            (data,labels) = collection.get_set(data_set_name, level)
-            dataset = DataSet(data, labels)    
-            for s in layers["suites"]:
+    for s in layers["suites"]:
+        for data_set_name in s["datasets"]:
+            levels = layers["noice"](data_set_name)
+            for level in levels:
+                (data,labels) = collection.get_set(data_set_name, level)
+                dataset = DataSet(data, labels)    
                 for transition in s["transition"]:
-                    suite = apply_down(s, dataset, s["pct_data_per_device"] * s["devices"])
+                    suite = apply_down(dict(s), dataset, round(s["pct_data_per_device"] * s["devices"]))
+                    suite["dataset"] = dataset
                     if transition: 
                         suite["name"] += " Transitioned"
-                        suite["timeline"] = smooth(s["timeline"])
+                        suite["timeline"] = smooth(suite["timeline"])
                     suite["name"] += " - {} ({})".format(data_set_name, level)
                     suites.append(suite)
     return suites
@@ -281,58 +195,47 @@ class DeviceSuite:
 
     def __init__(
             self, 
-            server_alg_class, 
-            device_alg_class,
+            suite,
+            test
         ):
-        for group, devices in data.items():
-            self.groups[group] = [Device(device_alg_class, indicies, id_num=(group*10000+i)) for i,indicies in enumerate(devices)]
+        self.suite = suite
+        self.test = test
+        counter = 0
+        for group, f in self.suite["groups"].items():
+            self.groups[group] = [Device(self.test["device"], f(), id_num=(counter*100000+i)) for i in range(self.suite["devices"])]
+            counter += 1
         
-        self.server = Server(server_alg_class, self.groups)
+        self.server = Server(self.test["server"], self.groups)
     
-    def run_rounds(self, num_devices_per_group_per_round):
-        # list of dictionaries of integers
-        for num_devices_per_group in num_devices_per_group_per_round:
-            self.server.run_round(num_devices_per_group)
+    def run_rounds(self):
+        for _round,groups in self.suite["timeline"].items():
+            self.server.run_round(groups)
 
-    def run_rounds_with_accuracy(self, num_devices_per_group_per_round, data, labels):
+    def run_rounds_with_accuracy(self):
         round_accs = []
-        run_num = 1
-        for num_devices_per_group in num_devices_per_group_per_round:
-            self.server.run_round(num_devices_per_group)
-            if ENABLE_ROUND_PROGRESS_PLOT or ENABLE_PRINTS: 
-                acc = self.accuracy(data, labels, run_num)
-                round_accs.append(acc)
-            if ENABLE_PRINTS: print("Accuracy: ", acc)
-            run_num += 1
+        for _round,groups in self.suite["timeline"].items():
+            self.server.run_round(groups)
+            round_accs.append(self.accuracy())
         return round_accs
 
-    def accuracy(self, data, labels, run_num = 1):
+    def accuracy(self):
+        data = self.suite["dataset"].data
+        labels = self.suite["dataset"].labeled_data
         pred_labels = self.server.classify(data)
-        if ENABLE_PLOTS:
-            plt.scatter(data[:, 0], data[:, 1], c=pred_labels, s=1)
-            # plt.show()
-            plt.savefig('Plots/' + CURRENT_FILE_NAME + "-round-" + str(run_num) + '.png')
         return metrics.adjusted_rand_score(labels, pred_labels)
-
-def run_test_suites(suites,tests):
-    for suite in suites:
-        for test in tests:
 
 
 
 def evaluate_accuracy_evolution():
-    global ENABLE_ROUND_PROGRESS_PLOT
-    ENABLE_ROUND_PROGRESS_PLOT = True
-    tests = create_tests()
+    suites = create_suites(layers)
+    tests = create_tests(layers)
+
+    # print("suites", suites)
+    # print("testsc", tests)
 
     m = MultiProcessing(MULTIPROCESSED)
-    results = m.constructAndRun(tests,
-        data_sets = collection.data_sets_names[0:1], 
-        levels = collection.noice_levels[:-1],
-        number_of_rounds = 8,
-        target=run_test_and_save)
+    results = m.constructAndRun(suites,tests)
     
-    # print("round acc", results)
     analysis.save_test_results(results)
 
     if ENABLE_ROUND_PROGRESS_PLOT: 

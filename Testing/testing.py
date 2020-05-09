@@ -33,8 +33,6 @@ from Algorithms.k_means import CURE_Server,K_Means_Device,CURE_Server_Carry,CURE
 
 collection = DataSetCollection()
 
-def asymptotic_decay(learning_rate, t, max_iter):
-    return learning_rate / (1+t/(max_iter/2))
 
 
 class DeviceSuite:

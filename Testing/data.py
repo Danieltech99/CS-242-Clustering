@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import random
 
 class DataSetCollection:
     data = None
@@ -88,16 +89,34 @@ class DataSet:
     def get_indices_for_label_c(self, label_num):
         return self.get_indices()[self.labeled_data <= label_num]
     
+    # def get_data(self):
+    #     indicies = self.get_indices()
+    #     return [self.data[i] for i in indicies]
+    
+    # def get_data_for_label(self, label_num):
+    #     indicies = self.get_indices_for_label(label_num)
+    #     return [self.data[i] for i in indicies]
+    
+    # def get_data_for_label_c(self, label_num):
+    #     indicies = self.get_indices_for_label_c(label_num)
+    #     return [self.data[i] for i in indicies]
+    
+
     def rand(self, size):
-        return np.random.choice(self.get_indices(), size=size, replace=False)
+        indicies = np.random.choice(self.get_indices(), size=size, replace=False)
+        return [self.data[i] for i in indicies]
     
     def rand_g(self, size, group):
+        x = random.random()
         non_iid_indices_population = self.get_indices_for_label(group)
-        return np.random.choice(non_iid_indices_population, size=size, replace=False)
+        indicies = np.random.choice(non_iid_indices_population, size=size, replace=False)
+        return [self.data[i] for i in indicies]
     
     def rand_g_c(self, size, group):
+        x = random.random()
         non_iid_indices_population = self.get_indices_for_label_c(group)
-        return np.random.choice(non_iid_indices_population, size=size, replace=False)
+        indicies = np.random.choice(non_iid_indices_population, size=size, replace=False)
+        return [self.data[i] for i in indicies]
     
     def concat(self, first_group, second_group):
         return np.unique(np.concatenate((first_group,second_group),0))
