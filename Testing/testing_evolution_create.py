@@ -2,9 +2,15 @@ from functools import partial
 from Testing.data import DataSet
 from Testing.config import collection
 
-def smooth(timeline):
+def smooth(timeline,rounds,transition):
     # add missing keys
     timeline = dict(timeline)
+
+    # add last round
+    t_keys = list(timeline.keys())
+    t_max = max(t_keys)
+    timeline[rounds - 1] = dict(timeline[t_max])
+
     keys = set()
     for time,state in timeline.items():
         keys.update(state.keys())
@@ -27,7 +33,7 @@ def smooth(timeline):
             timeline[t] = {}
             for key in timeline[time].keys():
                 delta_val = (timeline[time][key] - timeline[last_time][key]) / (l+1)
-                timeline[t][key] = timeline[t-1][key] + round(delta_val)
+                timeline[t][key] = timeline[t-1][key] + round(delta_val) if transition else timeline[t-1][key]
         last_time = time
     return timeline
 def apply_down(obj,*args,**kwargs):
@@ -50,7 +56,7 @@ def create_suites(layers):
                     suite["dataset"] = dataset
                     if transition: 
                         suite["name"] += " Transitioned"
-                        suite["timeline"] = smooth(suite["timeline"])
+                    suite["timeline"] = smooth(suite["timeline"],suite["rounds"],transition)
                     suite["name"] += " - {} ({})".format(data_set_name, level)
                     suites.append(suite)
     return suites

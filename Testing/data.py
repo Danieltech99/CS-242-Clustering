@@ -6,9 +6,9 @@ class DataSetCollection:
     data = None
     labeled_data = None
     noice_levels = [
-        "vhigh", 
+        # "vhigh", 
         # "high", 
-        "med", 
+        # "med", 
         # "low", 
         "vlow"
         ]

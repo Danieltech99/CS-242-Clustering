@@ -14,13 +14,13 @@ from Testing.devices import Device, Server
 random.seed(242) 
 np.random.rand(242)
 
-ENABLE_ROUND_PROGRESS_PLOT = False
+ENABLE_ROUND_PROGRESS_PLOT = True
 MULTIPROCESSED = True
 
 
 class MultiProcessing:
     def __init__(self, MULTIPROCESSED=True):
-        self.MULTIPROCESSED = MULTIPROCESSED and False
+        self.MULTIPROCESSED = MULTIPROCESSED
         self.manager = multiprocessing.Manager()
 
     def run_single(self, *,
@@ -134,7 +134,7 @@ class DeviceSuite:
 def evaluate_accuracy_evolution():
     suites = create_suites(layers)
     tests = create_tests(layers)
-    
+
     m = MultiProcessing(MULTIPROCESSED)
     results = m.constructAndRun(suites, tests)
 
@@ -145,4 +145,4 @@ def evaluate_accuracy_evolution():
 
 
 if __name__ == "__main__":
-    analysis.calculate_time(evaluate_accuracy_evolution())
+    analysis.calculate_time(evaluate_accuracy_evolution)()

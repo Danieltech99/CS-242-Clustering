@@ -1,10 +1,3 @@
-Data Set (ARI),Type,SOM (Fed)  
-B,a,s,i,c, ,-, ,b,l,o,b,s, ,(,v,h,i,g,h,),0.4797957702331298
-B,a,s,i,c, ,-, ,b,l,o,b,s, ,(,m,e,d,),0.46384874139503357
-B,a,s,i,c, ,-, ,b,l,o,b,s, ,(,v,l,o,w,),0.5666873663814714
-B,a,s,i,c, ,-, ,b,l,o,b,s,2, ,(,v,h,i,g,h,),0.4436957715325858
-B,a,s,i,c, ,-, ,b,l,o,b,s,2, ,(,m,e,d,),0.4495672395497692
-B,a,s,i,c, ,-, ,b,l,o,b,s,2, ,(,v,l,o,w,),0.4447686274509804
-B,a,s,i,c, ,-, ,c,i,r,c,l,e,-,g,r,o,u,p,e,d, ,(,v,h,i,g,h,),0.27262071896326145
-B,a,s,i,c, ,-, ,c,i,r,c,l,e,-,g,r,o,u,p,e,d, ,(,m,e,d,),0.3216680677589723
-B,a,s,i,c, ,-, ,c,i,r,c,l,e,-,g,r,o,u,p,e,d, ,(,v,l,o,w,),0.2390129405696755
+Data Set (ARI),Type,KMeans Server  
+C,r,o,w,d, ,D,i,s,c,o,v,e,r, ,T,r,a,n,s,i,t,i,o,n,e,d, ,-, ,b,l,o,b,s, ,(,v,l,o,w,),1.0
+C,r,o,w,d, ,D,i,s,c,o,v,e,r, ,-, ,b,l,o,b,s, ,(,v,l,o,w,),1.0
