@@ -38,6 +38,33 @@ def plot_rounds(results):
 
 
 
+class MajorPlotter:
+    def __init__(self, rounds, devices):
+        self.height = int(devices) + 2 # plus server centers and server pred
+        self.width = int(rounds)
+        # plt.figure(num=None, figsize=(1, 1), dpi=300)
+        _, self.axs = plt.subplots(self.height, self.width, sharex=True, sharey=True,figsize=(10,10))
+    
+    def plot(self, p, data, **kwargs):
+        p.scatter(data[:, 0], data[:, 1], s=1, **kwargs)
+
+    def plot_d(self, round, device, data, centers):
+        self.plot(self.axs[device, round], data)
+        self.plot(self.axs[device, round], centers, marker=">")
+    
+    def plot_s(self, round, data, centers):
+        self.plot(self.axs[-2, round], data)
+        self.plot(self.axs[-2, round], centers, marker=">")
+    
+    def plot_a(self, round, data, pred_labels):
+        self.plot(self.axs[-1, round], data, c=pred_labels)
+
+    def save(self, name):
+        plt.savefig('Plots/' + str(name) + '.png', dpi=200)
+
+
+
+
 # importing libraries 
 import time 
 import math 

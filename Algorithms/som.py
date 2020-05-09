@@ -224,6 +224,7 @@ class SOM_server:
 
     def get_reports_for_devices(self):
         updates_for_devices = self._weights
+        print(updates_for_devices)
         return updates_for_devices
 
     # Helper functions-- Update weights

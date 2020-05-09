@@ -51,8 +51,9 @@ def create_suites(layers):
             for level in levels:
                 (data,labels) = collection.get_set(data_set_name, level)
                 dataset = DataSet(data, labels)    
+                pop_size = dataset.get_indices().size
                 for transition in s["transition"]:
-                    suite = apply_down(dict(s), dataset, round(s["pct_data_per_device"] * s["devices"]))
+                    suite = apply_down(dict(s), dataset, round(s["pct_data_per_device"] * pop_size))
                     suite["dataset"] = dataset
                     if transition: 
                         suite["name"] += " Transitioned"

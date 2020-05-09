@@ -10,6 +10,7 @@ from Testing.testing_evolution_create import create_suites, create_tests
 from Testing.config import layers
 import Testing.analysis as analysis
 from Testing.devices import Device, Server
+import time
 
 random.seed(242) 
 np.random.rand(242)
@@ -29,9 +30,10 @@ class MultiProcessing:
                    ):
         name = suite["name"] + ": " + test["name"]
 
-        d = DeviceSuite(suite, test)
+        d = DeviceSuite(suite, test, name = name)
         result_dict["rounds"].extend(d.run_rounds_with_accuracy())
         result_dict["end"].value = d.accuracy()
+        d.complete()
 
         with progress_lock:
             number_of_tests_finished.value += 1
@@ -101,33 +103,69 @@ class DeviceSuite:
     def __init__(
         self,
         suite,
-        test
+        test,
+        name = None
     ):
         self.suite = suite
         self.test = test
+        self.name = name
         counter = 0
+
+        # print("start indicators")
+        # _, axs = plt.subplots(len(self.suite["groups"]) +1, 1, sharex=True, sharey=True,figsize=(2,6))
+        # print(self.suite["groups"])
         for group, f in self.suite["groups"].items():
             self.groups[group] = [Device(self.test["device"], f(), id_num=(
                 counter*100000+i)) for i in range(self.suite["devices"])]
-            counter += 1
+        #     print("starting group", group)
+        #     axs[counter].set_ylim([-4, 4])
+        #     axs[counter].set_xlim([-4, 4])
+        #     data = np.array(f())
+        #     axs[counter].scatter(data[:, 0], data[:, 1], s=1)
+        #     data = np.array(f())
+        #     axs[counter].scatter(data[:, 0], data[:, 1], s=1)
+        #     data = np.array(f())
+        #     axs[counter].scatter(data[:, 0], data[:, 1], s=1)
+        #     counter += 1
+        # data = self.suite["dataset"].data
+        # axs[counter].scatter(data[:, 0], data[:, 1], s=1, c=self.suite["dataset"].labeled_data)
+        # plt.savefig('Plots/device dist.png', dpi=200)
+        
+        # while True:
+        #     time.sleep(1)
 
         self.server = Server(self.test["server"], self.groups)
+
+        rounds = len(self.suite["timeline"])
+        max_devices = 0
+        for x in self.suite["timeline"].values():
+            max_devices = max(sum(x.values()),max_devices)
+        self.server.define_plotter(rounds = rounds, devices=max_devices)
 
     def run_rounds(self):
         for _round, groups in self.suite["timeline"].items():
             self.server.run_round(groups)
 
     def run_rounds_with_accuracy(self):
+        data = self.suite["dataset"].data
         round_accs = []
         for _round, groups in self.suite["timeline"].items():
-            self.server.run_round(groups)
+            self.server.run_round(groups, int(_round))
             round_accs.append(self.accuracy())
+            if self.server.PLOT:
+                self.server.plotter.plot_a(int(_round), data, self.last_pred)
         return round_accs
+    
+    def complete(self):
+        if self.server.PLOT:
+            self.server.plotter.save(self.name)
 
+    last_pred = None
     def accuracy(self):
         data = self.suite["dataset"].data
         labels = self.suite["dataset"].labeled_data
         pred_labels = self.server.classify(data)
+        self.last_pred = pred_labels
         return metrics.adjusted_rand_score(labels, pred_labels)
 
 

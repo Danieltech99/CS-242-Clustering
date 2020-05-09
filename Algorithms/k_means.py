@@ -155,8 +155,10 @@ class CURE_Server:
     def update_server(self, reports_from_devices):
         self.clusters_from_devices = np.vstack(reports_from_devices)
 
+    points_read_only = None
     def run_on_server(self, clusters_from_devices = None):
         if clusters_from_devices is None: clusters_from_devices = self.clusters_from_devices
+        self.points_read_only = clusters_from_devices
         cure_instance = cure(clusters_from_devices, self._n_clusters, self._n_rep_points, self._compression)
         cure_instance.process()
         representors = cure_instance.get_representors()
@@ -218,9 +220,11 @@ class CURE_Server_Keep(CURE_Server):
 from sklearn.cluster import KMeans
 class KMeans_Server(CURE_Server):
     current_model = None
+    points_read_only = None # access after `run_on_server`
     def run_on_server(self, clusters_from_devices = None):
         if clusters_from_devices is None: clusters_from_devices = self.clusters_from_devices
 
+        self.points_read_only = clusters_from_devices
         kmeans = KMeans(n_clusters=self._n_clusters, random_state=0).fit(clusters_from_devices)
 
         representors = kmeans.cluster_centers_

@@ -8,15 +8,15 @@ class DataSetCollection:
     noice_levels = [
         # "vhigh", 
         # "high", 
-        # "med", 
+        "med", 
         # "low", 
-        "vlow"
+        # "vlow"
         ]
     # data_sets_names = ["moons", "circles", "longblobs", "blobs", "blobs2", "circle-grouped", "blobs-grouped"]
     data_sets_names = [
         "blobs",  
-        "blobs2",
-        "circle-grouped",
+        # "blobs2",
+        # "circle-grouped",
         # "blobs-grouped",
     ]
     data_sets_names_validate = ["blobs", "blobs2", "circle", "blobs"]
@@ -102,18 +102,16 @@ class DataSet:
     #     return [self.data[i] for i in indicies]
     
 
-    def rand(self, size):
+    def rand(self, *, size):
         indicies = np.random.choice(self.get_indices(), size=size, replace=False)
         return [self.data[i] for i in indicies]
     
-    def rand_g(self, size, group):
-        x = random.random()
+    def rand_g(self, *, size, group):
         non_iid_indices_population = self.get_indices_for_label(group)
         indicies = np.random.choice(non_iid_indices_population, size=size, replace=False)
         return [self.data[i] for i in indicies]
     
-    def rand_g_c(self, size, group):
-        x = random.random()
+    def rand_g_c(self, *, size, group):
         non_iid_indices_population = self.get_indices_for_label_c(group)
         indicies = np.random.choice(non_iid_indices_population, size=size, replace=False)
         return [self.data[i] for i in indicies]
