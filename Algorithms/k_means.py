@@ -1,5 +1,7 @@
 import numpy as np
 from sklearn.metrics import pairwise_distances, pairwise_distances_argmin, pairwise_distances_argmin_min
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
 from pyclustering.cluster.cure import cure
 from pyclustering.cluster import cluster_visualizer
 
@@ -262,3 +264,16 @@ class KMeans_Server_Keep(KMeans_Server):
         if self.prev_round_info is None:
             self.prev_round_info = self.clusters_from_devices
         self.clusters_from_devices = np.concatenate((self.clusters_from_devices, self.prev_round_info), axis=0)
+
+
+# import matplotlib.pyplot as plt 
+def find_optimal_k_silhouette(data, max_k=20):
+    silhouette_scores = []
+    for k in range(2, max_k+1):
+        # print("running k =", k)
+        labels = KMeans(n_clusters=k).fit(data).labels_
+        silhouette_scores.append(silhouette_score(data, labels))
+        # plt.scatter(data[:, 0], data[:, 1], c=labels, s=1)
+        # plt.show()
+    # print(silhouette_scores)
+    return np.argmax(silhouette_scores) + 2
