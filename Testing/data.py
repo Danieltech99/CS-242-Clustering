@@ -52,7 +52,7 @@ class DataSetCollection:
         return name + "_" + noice_level + "_" + "noise"
     
     def get_set(self, name, noice_level):
-        return self.get_data_set(name, noice_level), self.get_label_set(name, noice_level)
+        return (self.get_data_set(name, noice_level), self.get_label_set(name, noice_level))
 
     def get_data_set(self, name, noice_level):
         location,key = self.file_map[name]
@@ -68,11 +68,13 @@ class DataSetCollection:
 
 class DataSet:
     data = None
-    labeled_data = None
+    labeled_data = None,
+    count = None
 
     def __init__(self, data, labels):
         self.data = data
         self.labeled_data = labels
+        self.count = np.max(labels) + 1
     
     def add_label_to_data(self):
         return np.column_stack((self.data,self.labeled_data))
@@ -82,6 +84,26 @@ class DataSet:
     
     def get_indices_for_label(self, label_num):
         return self.get_indices()[self.labeled_data == label_num]
+    
+    def get_indices_for_label_c(self, label_num):
+        return self.get_indices()[self.labeled_data <= label_num]
+    
+    def rand(self, size):
+        return np.random.choice(self.get_indices(), size=size, replace=False)
+    
+    def rand_g(self, size, group):
+        non_iid_indices_population = self.get_indices_for_label(group)
+        return np.random.choice(non_iid_indices_population, size=size, replace=False)
+    
+    def rand_g_c(self, size, group):
+        non_iid_indices_population = self.get_indices_for_label_c(group)
+        return np.random.choice(non_iid_indices_population, size=size, replace=False)
+    
+    def concat(self, first_group, second_group):
+        return np.unique(np.concatenate((first_group,second_group),0))
+
+    def merge(self, first_group, first_group_pct, second_group, second_group_pct):
+        return np.unique(np.concatenate((first_group,second_group),0))
     
 
 # SAMPLERS
