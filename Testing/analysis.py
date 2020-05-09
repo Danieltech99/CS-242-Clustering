@@ -9,19 +9,32 @@ def save_test_results(results):
             r_file.writerow(list(data_pair) + [i["end"].value for i in list(pair_results.values())])
 
 def plot_rounds(results):
-    fig, axs = plt.subplots(len(results.keys()))
-    i = 0
-    for data_pair,pair_results in results.items():
-        file_name = ' '.join(data_pair)
-        axs[i].set_title(file_name)
-        for name,data in list(pair_results.items()):
-            x = list(range(1, len(data["rounds"])+1))
-            y = data["rounds"]
-            axs[i].plot(x,y,label=name)
-        i+=1
-        plt.legend(loc=0,bbox_to_anchor=(1,0.5))
-        # plt.savefig('{}.png'.format(file_name), bbox_inches='tight')
-    plt.savefig('rounds-algs.png', bbox_inches='tight')
+    l = len(results.keys())
+    if l > 1:
+        fig, axs = plt.subplots(len(results.keys()))
+        i = 0
+        for data_pair,pair_results in results.items():
+            file_name = ' '.join(data_pair)
+            axs[i].set_title(file_name)
+            for name,data in list(pair_results.items()):
+                x = list(range(1, len(data["rounds"])+1))
+                y = data["rounds"]
+                axs[i].plot(x,y,label=name)
+            i+=1
+            plt.legend(loc=0,bbox_to_anchor=(1,0.5))
+            # plt.savefig('{}.png'.format(file_name), bbox_inches='tight')
+        plt.savefig('rounds-algs.png', bbox_inches='tight')
+    else:
+        for data_pair,pair_results in results.items():
+            file_name = ' '.join(data_pair)
+            plt.title(file_name)
+            for name,data in list(pair_results.items()):
+                x = list(range(1, len(data["rounds"])+1))
+                y = data["rounds"]
+                plt.plot(x,y,label=name)
+            plt.legend(loc=0,bbox_to_anchor=(1,0.5))
+            # plt.savefig('{}.png'.format(file_name), bbox_inches='tight')
+        plt.savefig('rounds-algs.png', bbox_inches='tight')
 
 
 

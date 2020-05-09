@@ -63,7 +63,7 @@ class Server:
     def run_round(self, num_devices_per_group_dict):
         devices = []
         for group,num_of_devices in num_devices_per_group_dict.items():
-            devices += random.sample(self.device_groups[group],num_of_devices)
+            devices += random.sample(self.device_groups[group],int(num_of_devices))
         reports = self.run_devices(devices)
         self.update(reports)
         self.run()
