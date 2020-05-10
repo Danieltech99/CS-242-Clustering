@@ -1,3 +1,6 @@
-Data Set (ARI),Type,KMeans Server  
-C,r,o,w,d, ,D,i,s,c,o,v,e,r, ,-, ,b,l,o,b,s, ,(,m,e,d,),0.8960797371391924
-C,r,o,w,d, ,R,e,p,l,a,c,e,m,e,n,t, ,T,r,a,n,s,i,t,i,o,n,e,d, ,-, ,b,l,o,b,s, ,(,m,e,d,),0.4634015358976023
+Data Set (ARI),Type,KMeans Server  ,KMeans Server Carry  ,KMeans Server Keep  
+C,r,o,w,d, ,D,i,s,c,o,v,e,r, ,T,r,a,n,s,i,t,i,o,n,e,d, ,-, ,b,l,o,b,s, ,(,m,e,d,),0.8839657987494339,0.9014407023305707,0.4737157663299085
+C,r,o,w,d, ,D,i,s,c,o,v,e,r, ,-, ,b,l,o,b,s, ,(,m,e,d,),0.9047606749703012,0.8848799961657136,0.475858939738673
+S,p,e,c,i,a,l,i,z,e,d, ,D,e,v,i,c,e,s, ,-, ,b,l,o,b,s, ,(,m,e,d,),0.8675123222631538,0.865912754593405,0.8828216344052598
+C,r,o,w,d, ,R,e,p,l,a,c,e,m,e,n,t, ,T,r,a,n,s,i,t,i,o,n,e,d, ,-, ,b,l,o,b,s, ,(,m,e,d,),0.2620077988416705,0.49293943661629663,0.8787750388990903
+C,r,o,w,d, ,R,e,p,l,a,c,e,m,e,n,t, ,-, ,b,l,o,b,s, ,(,m,e,d,),0.3119682849478533,0.4796265353101286,0.8849820690903434
