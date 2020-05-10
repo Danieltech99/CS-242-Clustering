@@ -10,7 +10,8 @@ params = {"N_CLUSTERS": 10,
           "MAX_ITERS": 100,
           "N_INITS": 10,
           "METRIC": "euclidean",
-          "TOLERANCE": None}
+          "TOLERANCE": None,
+          "KEEP_EMPTY_CLUSTERS": True}
 
 cure_params = {"N_CLUSTERS": 2,
                "N_REP_POINTS": 8,
@@ -24,6 +25,7 @@ class K_Means_Device:
         self._max_iters = params["MAX_ITERS"]
         self._n_inits = params["N_INITS"]
         self._metric = params["METRIC"]
+        self._keep_empty_clusters = params["KEEP_EMPTY_CLUSTERS"]
         
         self._data = data
         self._n_dims = data.shape[1]
@@ -94,7 +96,7 @@ class K_Means_Device:
             centers_old = centers.copy()
 
             labels, inertia = self._compute_labels_inertia(data, centers_old)
-            centers = self._compute_cluster_centers(data, labels, n_centers)
+            centers = self._compute_cluster_centers(data, labels, n_centers, centers_old, self._keep_empty_clusters)
 
             if self._best_inertia == None or inertia < self._best_inertia:
                 self._best_inertia = inertia.copy()
@@ -116,20 +118,31 @@ class K_Means_Device:
         return labels, inertia
 
     
-    def _compute_cluster_centers(self, data, labels, n_centers):
+    def _compute_cluster_centers(self, data, labels, n_centers, old_centers=None, keep_empty_centers=False):
         # n_datapoints = data.shape[0]
         data_dims = data.shape[1]
         centers = np.zeros((n_centers, data_dims))
 
-        j = 0
-        for i in range(n_centers):
-            data_i = data[labels == i]
-            if data_i.shape[0] != 0:
-                center = np.array(np.sum(data_i, axis=0)/data_i.shape[0])
-                centers[i] = center
-                j += 1
+        if keep_empty_centers:
+            for i in range(n_centers):
+                data_i = data[labels == i]
+                if data_i.shape[0] != 0:
+                    center = np.array(np.sum(data_i, axis=0)/data_i.shape[0])
+                    centers[i] = center
+                else:
+                    centers[i] = old_centers[i]
+            return centers
 
-        return centers[0:j]
+        else:
+            j = 0
+            for i in range(n_centers):
+                data_i = data[labels == i]
+                if data_i.shape[0] != 0:
+                    center = np.array(np.sum(data_i, axis=0)/data_i.shape[0])
+                    centers[i] = center
+                    j += 1
+
+            return centers[0:j]
 
 
     def get_report_for_server(self):
