@@ -135,7 +135,7 @@ layers = {
         },
     ],
     "algs": [
-        # {
+        {
             "name": "SOM (Fed)",
             "server": {"class": SOM_server, "kwargs": dict(params=layer_map["som_params"])}, 
             "device": {"class": SOM_Device, "kwargs": dict(params=layer_map["som_params"])},
