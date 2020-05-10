@@ -55,7 +55,7 @@ layers = {
             "devices": 20, # number of devices per group
             "pct_data_per_device": 0.05,
             "transition": [False],
-            "groups": lambda dsclass,size: {"uniform": partial(dsclass.rand, size=s)},
+            "groups": lambda dsclass,size: {"uniform": partial(dsclass.rand, size=size)},
             "timeline": {
                 0: {
                     "uniform": 10 # number of devices per round
