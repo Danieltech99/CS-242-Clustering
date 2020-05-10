@@ -44,6 +44,7 @@ class MultiProcessing:
         (number_of_tests, specs, results_dict) = construction
         processes = []
         number_of_tests_finished = multiprocessing.Value('i', 0)
+        print("Running {} Tests".format(number_of_tests))
 
         for spec in specs:
             kwargs = spec
@@ -111,28 +112,9 @@ class DeviceSuite:
         self.name = name
         counter = 0
 
-        # print("start indicators")
-        # _, axs = plt.subplots(len(self.suite["groups"]) +1, 1, sharex=True, sharey=True,figsize=(2,6))
-        # print(self.suite["groups"])
         for group, f in self.suite["groups"].items():
             self.groups[group] = [Device(self.test["device"], f(), id_num=(
                 counter*100000+i)) for i in range(self.suite["devices"])]
-        #     print("starting group", group)
-        #     axs[counter].set_ylim([-4, 4])
-        #     axs[counter].set_xlim([-4, 4])
-        #     data = np.array(f())
-        #     axs[counter].scatter(data[:, 0], data[:, 1], s=1)
-        #     data = np.array(f())
-        #     axs[counter].scatter(data[:, 0], data[:, 1], s=1)
-        #     data = np.array(f())
-        #     axs[counter].scatter(data[:, 0], data[:, 1], s=1)
-        #     counter += 1
-        # data = self.suite["dataset"].data
-        # axs[counter].scatter(data[:, 0], data[:, 1], s=1, c=self.suite["dataset"].labeled_data)
-        # plt.savefig('Plots/device dist.png', dpi=200)
-        
-        # while True:
-        #     time.sleep(1)
 
         self.server = Server(self.test["server"], self.groups)
 

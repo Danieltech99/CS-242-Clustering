@@ -219,13 +219,32 @@ class CURE_Server_Keep(CURE_Server):
 
 from sklearn.cluster import KMeans
 class KMeans_Server(CURE_Server):
+    def find_optimal_k_silhouette(self, data, max_k=20):
+        silhouette_scores = []
+        models = {}
+        for k in range(2, max_k+1):
+            # print("running k =", k)
+            k_fit = KMeans(n_clusters=k).fit(data)
+            models[k] = k_fit
+            labels = k_fit.labels_
+            silhouette_scores.append(silhouette_score(data, labels))
+            # plt.scatter(data[:, 0], data[:, 1], c=labels, s=1)
+            # plt.show()
+        # print(silhouette_scores)
+        best_k = np.argmax(silhouette_scores) + 2
+        # if best_k not in models:
+        #     k_fit = KMeans(n_clusters=best_k).fit(data)
+        #     return best_k, best_k
+        return best_k, models[best_k]
+
     current_model = None
     points_read_only = None # access after `run_on_server`
     def run_on_server(self, clusters_from_devices = None):
         if clusters_from_devices is None: clusters_from_devices = self.clusters_from_devices
 
         self.points_read_only = clusters_from_devices
-        kmeans = KMeans(n_clusters=self._n_clusters, random_state=0).fit(clusters_from_devices)
+        # kmeans = KMeans(n_clusters=self._n_clusters, random_state=0).fit(clusters_from_devices)
+        _, kmeans = self.find_optimal_k_silhouette(clusters_from_devices)
 
         representors = kmeans.cluster_centers_
         self.representors = representors
@@ -268,16 +287,3 @@ class KMeans_Server_Keep(KMeans_Server):
         if self.prev_round_info is None:
             self.prev_round_info = self.clusters_from_devices
         self.clusters_from_devices = np.concatenate((self.clusters_from_devices, self.prev_round_info), axis=0)
-
-
-# import matplotlib.pyplot as plt 
-def find_optimal_k_silhouette(data, max_k=20):
-    silhouette_scores = []
-    for k in range(2, max_k+1):
-        # print("running k =", k)
-        labels = KMeans(n_clusters=k).fit(data).labels_
-        silhouette_scores.append(silhouette_score(data, labels))
-        # plt.scatter(data[:, 0], data[:, 1], c=labels, s=1)
-        # plt.show()
-    # print(silhouette_scores)
-    return np.argmax(silhouette_scores) + 2

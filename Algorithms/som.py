@@ -84,6 +84,7 @@ class SOM_Device:
         for t, iteration in enumerate(iterations):
             self.update(data[iteration], self.winner(data[iteration]),
                         t, num_iteration)
+        
 
     def get_report_for_server(self):
         updates_for_server = self._weights
@@ -196,8 +197,10 @@ class SOM_server:
 
         self._activation_distance = distance_functions[activation_distance]
 
+    points_read_only = None
     def run_on_server(self):
         # print("Running Server ")
+        self.points_read_only = self._weights
         return self._weights
     
     def classify(self, data):
@@ -224,7 +227,6 @@ class SOM_server:
 
     def get_reports_for_devices(self):
         updates_for_devices = self._weights
-        print(updates_for_devices)
         return updates_for_devices
 
     # Helper functions-- Update weights
