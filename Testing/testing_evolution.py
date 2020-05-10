@@ -11,6 +11,7 @@ from Testing.config import layers
 import Testing.analysis as analysis
 from Testing.devices import Device, Server
 import time
+import math
 
 random.seed(242) 
 np.random.rand(242)
@@ -31,7 +32,8 @@ class MultiProcessing:
         name = suite["name"] + ": " + test["name"]
 
         d = DeviceSuite(suite, test, name = name)
-        result_dict["rounds"].extend(d.run_rounds_with_accuracy())
+        if ENABLE_ROUND_PROGRESS_PLOT:
+            result_dict["rounds"].extend(d.run_rounds_with_accuracy())
         result_dict["end"].value = d.accuracy()
         d.complete()
 
@@ -152,12 +154,13 @@ class DeviceSuite:
         if self.server.PLOT:
             self.server.plotter.plot_a(int(target_round), data, self.last_pred)
 
-    def run_rounds_with_accuracy(self):
+    def run_rounds_with_accuracy(self, return_rounds = True):
         # data = self.suite["dataset"].data
         round_accs = []
         for _round, groups in self.suite["timeline"].items():
             self.server.run_round(groups, int(_round))
-            round_accs.append(self.accuracy())
+            if return_rounds:
+                round_accs.append(self.accuracy())
             self.plot_round(_round)
         return round_accs
     
@@ -181,8 +184,15 @@ def evaluate_accuracy_evolution():
     suites = create_suites(layers)
     tests = create_tests(layers)
 
+    l = len(suites) * len(tests)
+    max_proc = 8
+    split_n = math.floor(l/(l/max_proc))
+    partitions = [suites[i:i + split_n] for i in range(0, len(suites), split_n)]
+
     m = MultiProcessing(MULTIPROCESSED)
-    results = m.constructAndRun(suites, tests)
+    results = {}
+    for part in partitions:
+        results.update(m.constructAndRun(part, tests))
 
     analysis.save_test_results(results)
 
