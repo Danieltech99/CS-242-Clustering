@@ -16,7 +16,7 @@ class DataSetCollection:
     data_sets_names = [
         "blobs",  
         "blobs2",
-        "circle-grouped",
+        # "circle-grouped",
         "blobs-grouped",
     ]
     data_sets_names_validate = ["blobs", "blobs2", "circle", "blobs"]

@@ -25,7 +25,8 @@ layer_map = dict(
             "MAX_ITERS": 100,
             "N_INITS": 10,
             "METRIC": "euclidean",
-            "TOLERANCE": None},
+            "TOLERANCE": None,
+            "KEEP_EMPTY_CLUSTERS": True},
     },
     k_means_server_params = {
         " ": {"N_CLUSTERS": 3,
