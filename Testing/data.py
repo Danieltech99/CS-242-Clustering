@@ -6,18 +6,18 @@ class DataSetCollection:
     data = None
     labeled_data = None
     noice_levels = [
-        # "vhigh", 
-        # "high", 
+        "vhigh", 
+        "high", 
         "med", 
-        # "low", 
-        # "vlow"
+        "low", 
+        "vlow"
         ]
     # data_sets_names = ["moons", "circles", "longblobs", "blobs", "blobs2", "circle-grouped", "blobs-grouped"]
     data_sets_names = [
         "blobs",  
-        # "blobs2",
-        # "circle-grouped",
-        # "blobs-grouped",
+        "blobs2",
+        "circle-grouped",
+        "blobs-grouped",
     ]
     data_sets_names_validate = ["blobs", "blobs2", "circle", "blobs"]
     count_map = {
@@ -103,18 +103,25 @@ class DataSet:
     
 
     def rand(self, *, size):
-        indicies = np.random.choice(self.get_indices(), size=size, replace=False)
-        return [self.data[i] for i in indicies]
+        res = {}
+        res["sample"] = lambda: [self.data[i] for i in np.random.choice(self.get_indices(), size=size, replace=False)]
+        res["population"] = lambda: self.get_indices()
+        return res
     
     def rand_g(self, *, size, group):
-        non_iid_indices_population = self.get_indices_for_label(group)
-        indicies = np.random.choice(non_iid_indices_population, size=size, replace=False)
-        return [self.data[i] for i in indicies]
+        res = {}
+        res["sample"] = lambda: [self.data[i] for i in np.random.choice(self.get_indices_for_label(group), size=size, replace=False)]
+        res["population"] = lambda: self.get_indices_for_label(group)
+        return res
     
     def rand_g_c(self, *, size, group):
-        non_iid_indices_population = self.get_indices_for_label_c(group)
-        indicies = np.random.choice(non_iid_indices_population, size=size, replace=False)
-        return [self.data[i] for i in indicies]
+        res = {}
+        res["sample"] = lambda: [self.data[i] for i in np.random.choice(self.get_indices_for_label_c(group), size=size, replace=False)]
+        res["population"] = lambda: self.get_indices_for_label_c(group)
+        return res
+    
+    def get_data_for_indicies(self, indicies):
+        return np.array([self.data[i] for i in indicies])
     
     def concat(self, first_group, second_group):
         return np.unique(np.concatenate((first_group,second_group),0))

@@ -88,8 +88,7 @@ class Server:
             report = device.report_back_to_server()
             reports.append(report)
             if self.PLOT:
-                if int(round_num) % 2 or (device_num-1)%2:
-                    self.plotter.plot_d(round_num, device_num, device.indicies, report)
+                self.plotter.plot_d(round_num, device_num, device.indicies, report)
         return reports
 
     def run(self):

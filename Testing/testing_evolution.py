@@ -113,7 +113,7 @@ class DeviceSuite:
         counter = 0
 
         for group, f in self.suite["groups"].items():
-            self.groups[group] = [Device(self.test["device"], f(), id_num=(
+            self.groups[group] = [Device(self.test["device"], f()["sample"](), id_num=(
                 counter*100000+i)) for i in range(self.suite["devices"])]
 
         self.server = Server(self.test["server"], self.groups)
@@ -128,14 +128,37 @@ class DeviceSuite:
         for _round, groups in self.suite["timeline"].items():
             self.server.run_round(groups)
 
+    def get_population_of_round(self, target_round):
+        indicies = None
+        group_set = set()
+        for _round, groups in self.suite["timeline"].items():
+            if _round <= target_round:
+                for g,val in groups.items():
+                    if val > 0 and g not in group_set:
+                        group_set.add(g)
+                        f = self.suite["groups"][g]
+                        _indicies = f()["population"]()
+                        if indicies is None:
+                            indicies = _indicies
+                        else:
+                            indicies = np.concatenate((indicies, _indicies),0)
+        indicies = np.unique(indicies)
+        data = self.suite["dataset"].get_data_for_indicies(indicies)
+        return data
+
+    def plot_round(self, target_round):
+        data = self.get_population_of_round(target_round)
+        self.sub_accuracy(data)
+        if self.server.PLOT:
+            self.server.plotter.plot_a(int(target_round), data, self.last_pred)
+
     def run_rounds_with_accuracy(self):
-        data = self.suite["dataset"].data
+        # data = self.suite["dataset"].data
         round_accs = []
         for _round, groups in self.suite["timeline"].items():
             self.server.run_round(groups, int(_round))
             round_accs.append(self.accuracy())
-            if self.server.PLOT:
-                self.server.plotter.plot_a(int(_round), data, self.last_pred)
+            self.plot_round(_round)
         return round_accs
     
     def complete(self):
@@ -149,6 +172,9 @@ class DeviceSuite:
         pred_labels = self.server.classify(data)
         self.last_pred = pred_labels
         return metrics.adjusted_rand_score(labels, pred_labels)
+    def sub_accuracy(self, data):
+        pred_labels = self.server.classify(data)
+        self.last_pred = pred_labels
 
 
 def evaluate_accuracy_evolution():
