@@ -39,14 +39,14 @@ class MultiProcessing:
 
         with progress_lock:
             number_of_tests_finished.value += 1
-            print('Progress: {}/{} Complete \t {} \t {}'.format(number_of_tests_finished.value, number_of_tests, result_dict["end"].value, name))
+            print('\tProgress: {}/{} Complete \t {} \t {}'.format(number_of_tests_finished.value, number_of_tests, result_dict["end"].value, name))
 
     def run(self, construction, **kwargs):
         # Take a list of process specs and run in parallel
         (number_of_tests, specs, results_dict) = construction
         processes = []
         number_of_tests_finished = multiprocessing.Value('i', 0)
-        print("Running {} Tests".format(number_of_tests))
+        print("\tRunning {} Tests".format(number_of_tests))
 
         for spec in specs:
             kwargs = spec
@@ -187,12 +187,17 @@ def evaluate_accuracy_evolution():
     l = len(suites) * len(tests)
     max_proc = 8
     split_n = math.floor(l/(l/max_proc))
+    split_n = math.ceil(split_n / len(tests))
     partitions = [suites[i:i + split_n] for i in range(0, len(suites), split_n)]
+    sets = len(partitions)
+    print("Running {} Sets of Tests".format(sets))
 
     m = MultiProcessing(MULTIPROCESSED)
     results = {}
-    for part in partitions:
-        results.update(m.constructAndRun(part, tests))
+    for i, part in enumerate(partitions):
+        res = analysis.calculate_time(m.constructAndRun)(part, tests)
+        results.update(res)
+        print("Progress: {} of {} Complete".format(i+1, sets))
 
     analysis.save_test_results(results)
 

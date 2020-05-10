@@ -81,9 +81,10 @@ def calculate_time(func):
         # storing time before function execution 
         begin = time.time() 
           
-        func(*args, **kwargs) 
+        res = func(*args, **kwargs) 
   
         # storing time after function execution 
         delta = time.time() - begin
         print('That took {} seconds / {} minutes'.format(delta, delta/60)) 
+        return res
     return inner1 
