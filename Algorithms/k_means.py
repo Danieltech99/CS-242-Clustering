@@ -241,7 +241,7 @@ class KMeans_Server(CURE_Server):
             models[k] = k_fit
             labels = k_fit.labels_
             silhouette_scores.append(silhouette_score(data, labels))
-            print("\t\t\tfinished running k =", k)
+            # print("\t\t\tfinished running k =", k)
 
         best_k = np.argmax(silhouette_scores) + 2
         return best_k, models[best_k]
