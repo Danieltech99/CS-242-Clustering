@@ -46,6 +46,8 @@ class MajorPlotter:
         _, self.axs = plt.subplots(self.height, self.width, sharex=True, sharey=True,figsize=(self.width,self.height))
     
     def plot(self, p, data, **kwargs):
+        p.set_xlim([-4,4])
+        p.set_ylim([-4,4])
         p.scatter(data[:, 0], data[:, 1], s=1, **kwargs)
 
     def plot_d(self, round, device, data, centers):
