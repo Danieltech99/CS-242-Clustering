@@ -55,7 +55,7 @@ class gossip_KMeans_Device:
         # self.error = float("Inf")
         # self.local_error = None
 
-        if self._global_init is None 
+        if self._global_init is None:
             if id_num == 0:
                 self.centers = self._init_cluster_centers(self._data)
             else:
@@ -213,7 +213,7 @@ class gossip_KMeans_server:
                 tmp_weights[device_id] = tmp_weights[device_id] + 1/2*tmp_weights[target_id]
                 
                 # sync caches
-                merged_cache = tmp_caches[device_id].union)(tmp_caches[target_id])
+                merged_cache = tmp_caches[device_id].union(tmp_caches[target_id])
                 tmp_caches[device_id] = merged_cache
                 tmp_caches[target_id] = merged_cache
 
@@ -229,8 +229,8 @@ class gossip_KMeans_server:
         updates_for_devices = {}
         for device_id in range(self._n_devices):
             update = {
-                        "cache" = tmp_caches[device_id],
-                        "centers" = tmp_center_sums[device_id] / tmp_weights[device_id][:, None]
+                        "cache": tmp_caches[device_id],
+                        "centers": tmp_center_sums[device_id] / tmp_weights[device_id][:, None]
                      }      
             updates_for_devices[device_id] = update
 
