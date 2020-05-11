@@ -91,6 +91,7 @@ class DataSet:
         else: 
             self.true_labels = self.labeled_data
         self.count = np.max(labels) + 1
+        self.t_count = np.max(true_labels) + 1
     
     def get_indices(self):
         return np.arange(0, self.data.shape[0])

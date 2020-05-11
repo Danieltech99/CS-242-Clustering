@@ -14,13 +14,14 @@ import time
 import math
 from Algorithms.k_means import KMeans_Server
 import copy
+import json
 
 random.seed(242) 
 np.random.rand(242)
 NON_FED_KEY = "Traditional K-Means"
 
 ENABLE_ROUND_PROGRESS_PLOT = True
-MULTIPROCESSED = False
+MULTIPROCESSED = True
 PLOT = False
 RUN_NON_FED = True
 
@@ -30,9 +31,20 @@ class MultiProcessing:
         self.MULTIPROCESSED = MULTIPROCESSED
         self.manager = multiprocessing.Manager()
 
+    def convert(self, res):
+        o = {}
+        for k,v in res.items():
+            o[k] = {}
+            for k2,v2 in v.items():
+                o[k][k2] = {
+                    "end": v2["end"].value,
+                    "rounds": list(v2["rounds"])
+                }
+        return o
+
     def run_single(self, *,
                    result_dict, suite, test,
-                   progress_lock, number_of_tests, number_of_tests_finished
+                   progress_lock, number_of_tests, number_of_tests_finished,res
                    ):
         name = suite["name"] + ": " + test["name"]
 
@@ -46,6 +58,10 @@ class MultiProcessing:
 
         with progress_lock:
             number_of_tests_finished.value += 1
+        #     o = self.convert(res)
+        # with open('results.json', 'w') as outfile:
+        #     json.dump(o, outfile)
+            
         print('\tProgress: {}/{} Complete \t {} \t {}'.format(number_of_tests_finished.value, number_of_tests, result_dict["end"].value, name))
 
     def run(self, construction, **kwargs):
@@ -60,6 +76,7 @@ class MultiProcessing:
             kwargs["progress_lock"] = multiprocessing.Lock()
             kwargs["number_of_tests"] = number_of_tests
             kwargs["number_of_tests_finished"] = number_of_tests_finished
+            kwargs["res"] = results_dict
 
             if not self.MULTIPROCESSED:
                 self.run_single(**kwargs)
@@ -68,7 +85,7 @@ class MultiProcessing:
                 processes.append(p)
                 p.start()
 
-        self.run_non_fed()
+        # self.run_non_fed(results_dict)
 
         if self.MULTIPROCESSED:
             for process in processes:
@@ -93,7 +110,7 @@ class MultiProcessing:
         labels = suite["dataset"].true_labels
         return metrics.adjusted_rand_score(labels, pred_labels)
 
-    def run_non_fed(self):
+    def run_non_fed(self,results_dict):
         for suite in self.suites:
             key = suite["name"]
             if suite["non_fed"] and RUN_NON_FED:
@@ -102,7 +119,7 @@ class MultiProcessing:
                 results_dict[key][NON_FED_KEY]["end"].value = a
                 results_dict[key][NON_FED_KEY]["rounds"].extend([a] * suite["rounds"])
 
-    def constructProcessTests(self, suites, tests, **kwargs):
+    def constructProcessTests(self, suites, tests, current = None, **kwargs):
         # Create a list of process specs
         number_of_tests = 0
         specs = []
@@ -112,14 +129,19 @@ class MultiProcessing:
             key = suite["name"]
             results_dict[key] = OrderedDict()
 
+            added = 0
             for test in tests:
-                number_of_tests += 1
-                results_dict[key][test["name"]] = self.createResultObjItem()
-                specs.append(dict(
-                    result_dict=results_dict[key][test["name"]],
-                    suite=suite,
-                    test=test
-                ))
+                if current is None or len(current[key][test["name"]]["rounds"]) == 0:
+                    added += 1
+                    results_dict[key][test["name"]] = self.createResultObjItem()
+                    specs.append(dict(
+                        result_dict=results_dict[key][test["name"]],
+                        suite=suite,
+                        test=test
+                    ))
+            if added == 0:
+                del results_dict[key]
+            number_of_tests += added
 
         self.suites = suites
         return number_of_tests, specs, results_dict
@@ -228,17 +250,27 @@ def evaluate_accuracy_evolution():
     sets = len(partitions)
     print("Running {} Sets of Tests".format(sets))
 
+    current = None
+    with open('results.json') as f:
+        current = json.load(f)
+
     m = MultiProcessing(MULTIPROCESSED)
     results = {}
     for i, part in enumerate(partitions):
-        res = analysis.calculate_time(m.constructAndRun)(part, tests)
+        res = analysis.calculate_time(m.constructAndRun)(part, tests, current = current)
         results.update(res)
         print("Progress: {} of {} Complete".format(i+1, sets))
 
     # analysis.save_test_results(results)
 
-    if ENABLE_ROUND_PROGRESS_PLOT:
-        analysis.calculate_time(analysis.plot_rounds)(results)
+    o = m.convert(results)
+    with open('results-new.json', 'w') as outfile:
+        json.dump(o, outfile)
+    with open('results-updated.json', 'w') as outfile:
+        json.dump(current.extend(o), outfile)
+
+    # if ENABLE_ROUND_PROGRESS_PLOT:
+    #     analysis.calculate_time(analysis.plot_rounds)(results)
 
 
 if __name__ == "__main__":

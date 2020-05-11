@@ -93,6 +93,7 @@ class Server:
 
     def run_devices(self, devices, round_num = 0):
         reports = []
+        # print("here ",len(devices))
         for device_num,device in enumerate(devices):
             device.set_id(device_num)
             device.run()

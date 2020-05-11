@@ -69,7 +69,7 @@ def create_suites(layers):
                     if transition: 
                         suite["name"] += " Transitioned"
                     suite["timeline"] = smooth(suite["timeline"],suite["rounds"],transition, suite["devices_per_round"])
-                    suite["name"] += " - {} ({})".format(data_set_name, level)
+                    # suite["name"] += " - {} ({})".format(data_set_name, level)
                     suites.append(suite)
     return suites
 def create_tests(layers):
