@@ -1,19 +1,28 @@
+import random
 import numpy as np
 from sklearn.metrics import pairwise_distances, pairwise_distances_argmin, pairwise_distances_argmin_min
 from sklearn.cluster import KMeans
 
 
-params = {"N_CLUSTERS": 10,
-          "MAX_ITERS": 100,
-          "N_INITS": 10,
-          "N_DEVICES": 10,
-          "CACHE_SIZE": 4,
-          "GLOBAL_INIT": None,
-          "METRIC": "euclidean",
-          "TOLERANCE": None}
+device_params = {
+    "N_CLUSTERS": 10,
+    "N_INITS": 10,
+    "N_DEVICES": 10,
+    "CACHE_SIZE": 4,
+    "GLOBAL_INIT": False,
+    "METRIC": "euclidean",
+    "MAX_ITERS": 100,
+    "TOLERANCE": None
+}
+
+server_params = {
+    "N_CLUSTERS": 4,
+    "N_DEVICES": 10,
+    "N_AGGREGATE_ROUNDS": 5
+}
 
 
-class gossip_K_Means_Device:
+class gossip_KMeans_Device:
     def __init__(self, data, params, id_num=None):
         """Initialize k-means member variables"""
         self._n_clusters = params["N_CLUSTERS"]
@@ -41,12 +50,16 @@ class gossip_K_Means_Device:
             self.cache = [0, self._n_devices]
         else:
             self.cache = [self._id_num - 1, self._id_num + 1]
+        self.cache = set(self.cache)
 
-        self.error = float("Inf")
-        self.local_error = None
+        # self.error = float("Inf")
+        # self.local_error = None
 
-        if self._global_init is None:
-            self.centers = self._init_cluster_centers(self._data)
+        if self._global_init is None 
+            if id_num == 0:
+                self.centers = self._init_cluster_centers(self._data)
+            else:
+                self.centers = None
         else:
             self.centers = self._global_init
         
@@ -57,7 +70,7 @@ class gossip_K_Means_Device:
         
         self.local_counts = None
 
-        self._large_number = 999
+        self._large_number = 9999
         
         
     def run_on_device(self):
@@ -68,11 +81,14 @@ class gossip_K_Means_Device:
         centers = self.centers
         n_centers = self._n_clusters
 
+        if centers is None:
+            return
+
         labels, local_error = self._compute_labels_inertia(data, centers)
         local_centers, local_counts = self._compute_centers_counts(data, labels, n_centers)
 
         self.labels = labels
-        self.local_error = local_error
+        # self.local_error = local_error
         self.local_centers = local_centers
         self.local_counts = local_counts
 
@@ -94,24 +110,6 @@ class gossip_K_Means_Device:
             centers[i] = data[next_center_idx]
 
         return centers
-
-
-    # def _fit(self, data, initial_centers):
-    #     centers = initial_centers
-    #     for i in range(self._max_iters):
-    #         n_centers = centers.shape[0]
-    #         centers_old = centers.copy()
-
-    #         labels, inertia = self._compute_labels_inertia(data, centers_old)
-    #         centers = self._compute_cluster_centers(data, labels, n_centers)
-
-    #         if self._best_inertia == None or inertia < self._best_inertia:
-    #             self._best_inertia = inertia.copy()
-    #             self._best_labels = labels.copy()
-    #             self._best_centers = centers_old.copy()
-                
-    #         if centers_old.shape == centers.shape and np.allclose(centers_old, centers, atol=self._tolerance):
-    #             break
 
 
     def _compute_labels_inertia(self, data, centers, metric=None):
@@ -142,10 +140,108 @@ class gossip_K_Means_Device:
         return centers, counts
 
 
-    # def get_report_for_server(self):
-    #     updates_for_server = self._best_centers
-    #     return updates_for_server
+    def get_report_for_server(self):
+        
+        updates_for_server = {
+                              "device_id": self._id_num,
+                              "cache": self.cache,
+                              "cache_size": self.cache_size,
+                              "local_centers": self.local_centers,
+                              "local_counts": self.local_counts
+                              }
+                
+        return updates_for_server
 
 
-    # def update_device(self, reports_from_server):
-    #     self._server_centers = reports_from_server
+    def update_device(self, reports_from_server):
+        device_update = reports_from_server[self._id_num]
+
+        self.cache = device_update["cache"]
+        self.centers = device_update["centers"]
+        # self.counts = device_update["counts"]
+        # self.error = device_update["error"]
+
+
+
+class gossip_KMeans_server:
+    def __init__(self, params):
+        self._n_clusters = params["N_CLUSTERS"]
+        self._n_devices = params["N_DEVICES"]
+        self._n_aggregate_rounds = params["N_AGGREGATE_ROUNDS"]
+
+        self.updates_for_devices = {i:{} for i in range(self._n_devices)}
+
+
+    def update_server(self, reports_from_devices):
+        all_reports = {report["device_id"]:report for report in reports_from_devices}
+        if reports_from_devices[1]["local_centers"] is None:
+            first_round_sync(all_reports)
+        else:
+            gossip_sync(all_reports)
+
+    def first_round_sync(self, all_reports):
+        master_centers = all_reports[0]["local_centers"]
+
+        updates_for_devices = {}
+        for device_id in range(self._n_devices):
+            update = {
+                "cache": all_reports[device_id]["cache"],
+                "centers": master_centers
+            }
+            updates_for_device[device_id] = update
+
+        self.updates_for_devices = updates_for_devices
+                
+
+    def gossip_sync(self, all_reports):
+        tmp_center_sums = {device_id:report["local_centers"] * report["local_counts"][:, None]
+                            for device_id, report in all_reports.items()}
+        tmp_weights = {device_id:report["local_counts"] 
+                        for device_id, report in all_reports.items()}
+        tmp_caches = {device_id:report["cache"]
+                       for device_id, report in all_reports.items()}
+
+        # Calculate new cluster center from neighbors
+        for agg_round in range(self._n_aggregate_rounds):
+            for device_id in range(self._n_devices):
+                device_cache = tmp_caches[device_id]
+                target_id = random.choice(device_cache)
+                
+                # update sums and weights
+                tmp_center_sums[device_id] = tmp_center_sums[device_id] + \
+                    1/2 * tmp_center_sums[target_id] * tmp_weights[target_id][:, None]
+                tmp_weights[device_id] = tmp_weights[device_id] + 1/2*tmp_weights[target_id]
+                
+                # sync caches
+                merged_cache = tmp_caches[device_id].union)(tmp_caches[target_id])
+                tmp_caches[device_id] = merged_cache
+                tmp_caches[target_id] = merged_cache
+
+                tmp_caches[device_id].discard(device_id)
+                tmp_caches[target_id].discard(target_id)
+
+                while len(tmp_caches[device_id]) > all_reports[device_id]["cache_size"]:
+                    tmp_caches[device_id].pop()
+                while len(tmp_caches[target_id]) > all_reports[target_id]["cache_size"]:
+                    tmp_caches[target_id].pop() 
+
+
+        updates_for_devices = {}
+        for device_id in range(self._n_devices):
+            update = {
+                        "cache" = tmp_caches[device_id],
+                        "centers" = tmp_center_sums[device_id] / tmp_weights[device_id][:, None]
+                     }      
+            updates_for_devices[device_id] = update
+
+        self.updates_for_devices = updates_for_devices
+                
+
+    def get_reports_for_devices(self):
+        return self.updates_for_devices
+
+    def classify(self, data):
+        rand_device_id = np.random.randint(self._n_devices)
+        rand_device_centers = self.updates_for_devices[rand_device_id]["centers"]
+        return pairwise_distances_argmin_min(data, rand_device_centers)[0]
+ 
