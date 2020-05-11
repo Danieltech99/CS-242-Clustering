@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import random
+import time
 
 class DataSetCollection:
     data = None
@@ -61,19 +62,19 @@ class DataSetCollection:
     def get_data_set(self, name, noice_level):
         location,key = self.file_map[name]
         data_source = getattr(self, location)
-        res = data_source[self.construct_key(key,noice_level)][::4]
+        res = data_source[self.construct_key(key,noice_level)]
         return res
     
     def get_label_set(self, name, noice_level):
         location,key = self.file_map[name]
         data_source = getattr(self, "labeled_"+location)
-        res = data_source[self.construct_key(key,noice_level)][::4]
+        res = data_source[self.construct_key(key,noice_level)]
         return res
     
     def get_true_label_set(self, name, noice_level):
         location,key = self.file_map[name]
         data_source = getattr(self, "labeled_"+location)
-        res = data_source[self.construct_key(key,noice_level)+"_true"][::4]
+        res = data_source[self.construct_key(key,noice_level)+"_true"]
         return res
 
 class DataSet:
@@ -134,9 +135,15 @@ class DataSet:
         res["population"] = lambda: self.get_indices_for_label_c(group)
         return res
 
+    def get_iid(self, *, size, group, perc):
+        one = np.random.choice(self.get_indices_for_label(group), size=round(size*(1-perc)), replace=False)
+        two = np.random.choice(self.get_indices_for_label_c(group), size=round(size*perc), replace=False)
+        res = np.unique(np.concatenate((one,two),0))
+        return res
+
     def rand_iid(self, *, size, group, perc):
         res = {}
-        res["sample"] = lambda: [self.data[i] for i in np.unique(np.concatenate((self.rand(size=size*(1-perc_iid)),self.rand_g(size=size*(perc_iid))),0))]
+        res["sample"] = lambda: [self.data[i] for i in self.get_iid(size=size,group=group,perc=perc)]
         res["population"] = lambda: self.get_indices()
         return res
     

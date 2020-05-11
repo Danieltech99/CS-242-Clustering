@@ -1,6 +1,7 @@
 from functools import partial
 from Testing.data import DataSet
 from Testing.config import collection
+import time
 
 def smooth(timeline,rounds,transition,devices_per_round):
     # add missing keys
@@ -61,7 +62,7 @@ def create_suites(layers):
             for level in levels:
                 (data,labels,true_labels) = collection.get_set_true(data_set_name, level)
                 dataset = DataSet(data, labels,true_labels)    
-                pop_size = dataset.get_indices().size
+                pop_size = dataset.data.shape[0]
                 for transition in s["transition"]:
                     suite = apply_down(dict(s), dataset, round(s["pct_data_per_device"] * pop_size))
                     suite["dataset"] = dataset
@@ -81,7 +82,7 @@ def create_tests(layers):
                     for device_param_name, device_params in device_params_dict.items():
                         tests.append({
                             "name": alg["name"] + server_param_name + device_param_name,
-                            "device_multi": alg["device_multi"],
+                            "device_multi": alg.get("device_multi",0),
                             "server": partial(alg["server"]["class"], **{server_params_key: server_params}),
                             "device": partial(alg["device"]["class"], **{device_params_key: device_params})
                         })

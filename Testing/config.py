@@ -201,40 +201,42 @@ layers = {
             # Move 20 devices up a group every 3 rounds
             "timeline": lambda d,size: reduce((lambda o, s: o.update({10*s: {s: 2, 0: (10 if s == 0 else 8)}}) or o), range(d.count), {}),
         },
-        {
-            # Start with all devices having cluster 1
-            # After 3 rounds, let 20 devices discover another cluster
-            # After another 3, let the same 20 discover another
-            "name": "One Discover",
-            "datasets": DataSetCollection.data_sets_names,
-            "rounds": lambda d,size: 3 * d.count,
-            "devices": 20,
-            "pct_data_per_device": 0.05,
-            "transition": [True, False],
-            # Create groups with names counting up from 0 to count
-            # group n has datapoints from cluster n and is concated with group n-1
-            "groups": lambda d,s: {g: partial(d.rand_g_c, size=s,group=g) for g in range(d.count)},
-            # Start all devices at group 1,
-            # Move 20 devices up a group every 3 rounds
-            "timeline": lambda d,size: reduce((lambda o, s: o.update({3*s: {s: 1, 0: (10 if s == 0 else 9)}}) or o), range(d.count), {}),
-        },
-        {
-            # Start with all devices having cluster 1
-            # After 3 rounds, let 20 devices discover another cluster
-            # After another 3, let the same 20 discover another
-            "name": "One Discover Long",
-            "datasets": DataSetCollection.data_sets_names,
-            "rounds": lambda d,size: 5* d.count,
-            "devices": 15,
-            "pct_data_per_device": 0.05,
-            "transition": [True, False],
-            # Create groups with names counting up from 0 to count
-            # group n has datapoints from cluster n and is concated with group n-1
-            "groups": lambda d,s: {g: partial(d.rand_g_c, size=s,group=g) for g in range(d.count)},
-            # Start all devices at group 1,
-            # Move 20 devices up a group every 3 rounds
-            "timeline": lambda d,size: reduce((lambda o, s: o.update({5*s: {s: 1, 0: (10 if s == 0 else 9)}}) or o), range(d.count), {}),
-        },
+        # {
+        #     # Start with all devices having cluster 1
+        #     # After 3 rounds, let 20 devices discover another cluster
+        #     # After another 3, let the same 20 discover another
+        #     "name": "One Discover",
+        #     "devices_per_round": 10,
+        #     "datasets": DataSetCollection.data_sets_names,
+        #     "rounds": lambda d,size: 3 * d.count,
+        #     "devices": 20,
+        #     "pct_data_per_device": 0.05,
+        #     "transition": [True, False],
+        #     # Create groups with names counting up from 0 to count
+        #     # group n has datapoints from cluster n and is concated with group n-1
+        #     "groups": lambda d,s: {g: partial(d.rand_g_c, size=s,group=g) for g in range(d.count)},
+        #     # Start all devices at group 1,
+        #     # Move 20 devices up a group every 3 rounds
+        #     "timeline": lambda d,size: reduce((lambda o, s: o.update({3*s: {s: 1, 0: (10 if s == 0 else 9)}}) or o), range(d.count), {}),
+        # },
+        # {
+        #     # Start with all devices having cluster 1
+        #     # After 3 rounds, let 20 devices discover another cluster
+        #     # After another 3, let the same 20 discover another
+        #     "name": "One Discover Long",
+        #     "devices_per_round": 10,
+        #     "datasets": DataSetCollection.data_sets_names,
+        #     "rounds": lambda d,size: 5* d.count,
+        #     "devices": 15,
+        #     "pct_data_per_device": 0.05,
+        #     "transition": [True, False],
+        #     # Create groups with names counting up from 0 to count
+        #     # group n has datapoints from cluster n and is concated with group n-1
+        #     "groups": lambda d,s: {g: partial(d.rand_g_c, size=s,group=g) for g in range(d.count)},
+        #     # Start all devices at group 1,
+        #     # Move 20 devices up a group every 3 rounds
+        #     "timeline": lambda d,size: reduce((lambda o, s: o.update({5*s: {s: 1, 0: (10 if s == 0 else 9)}}) or o), range(d.count), {}),
+        # },
     ],
     "algs": [
         {

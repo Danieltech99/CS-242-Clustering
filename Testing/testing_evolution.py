@@ -13,12 +13,13 @@ from Testing.devices import Device, Server
 import time
 import math
 from Algorithms.k_means import KMeans_Server
+import copy
 
 random.seed(242) 
 np.random.rand(242)
 
 ENABLE_ROUND_PROGRESS_PLOT = True
-MULTIPROCESSED = True
+MULTIPROCESSED = False
 PLOT = True
 NON_FED_KEY = "Traditional K-Means"
 
@@ -37,6 +38,8 @@ class MultiProcessing:
         d = DeviceSuite(suite, test, name = name)
         if ENABLE_ROUND_PROGRESS_PLOT:
             result_dict["rounds"].extend(d.run_rounds_with_accuracy())
+        else:
+            d.run_rounds_with_accuracy()
         result_dict["end"].value = d.accuracy()
         d.complete()
 
@@ -57,11 +60,12 @@ class MultiProcessing:
             kwargs["number_of_tests"] = number_of_tests
             kwargs["number_of_tests_finished"] = number_of_tests_finished
 
-            p = multiprocessing.Process(target=self.run_single, kwargs=kwargs)
-            processes.append(p)
-            p.start()
             if not self.MULTIPROCESSED:
-                p.join()
+                self.run_single(**kwargs)
+            else:
+                p = multiprocessing.Process(target=self.run_single, kwargs=kwargs)
+                processes.append(p)
+                p.start()
 
         if self.MULTIPROCESSED:
             for process in processes:

@@ -79,6 +79,9 @@ class Server:
         devices = []
         for group,num_of_devices in num_devices_per_group_dict.items():
             devices += random.sample(self.device_groups[group],int(num_of_devices))
+        if len(devices) == 0:
+            print("NO DEVICES IN ROUND", num_devices_per_group_dict)
+            return 
         reports = self.run_devices(devices, round_num)
         self.update(reports)
         self.run()
