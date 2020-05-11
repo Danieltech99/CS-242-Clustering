@@ -110,14 +110,18 @@ class MultiProcessing:
         labels = suite["dataset"].true_labels
         return metrics.adjusted_rand_score(labels, pred_labels)
 
-    def run_non_fed(self,results_dict):
-        for suite in self.suites:
+    def run_non_fed(self,results_dict, suites = None, cond = False, create = False):
+        if suites is None: suites = self.suites
+        for i,suite in enumerate(suites):
             key = suite["name"]
-            if suite["non_fed"] and RUN_NON_FED:
+            if create: results_dict[key] = {}
+            if suite["non_fed"] and (RUN_NON_FED or cond):
                 results_dict[key][NON_FED_KEY] = self.createResultObjItem()
                 a = self.non_fed_k_means(suite)
                 results_dict[key][NON_FED_KEY]["end"].value = a
                 results_dict[key][NON_FED_KEY]["rounds"].extend([a] * suite["rounds"])
+                print("Finished Traditional K Means on Suite {}".format(i))
+        return results_dict
 
     def constructProcessTests(self, suites, tests, current = None, **kwargs):
         # Create a list of process specs
@@ -238,6 +242,14 @@ class DeviceSuite:
         return metrics.adjusted_rand_score(labels, pred_labels)
 
 
+def u(obj1,obj2):
+    o = copy.deepcopy(obj1)
+    for k,v in obj2.items():
+        for k2,v2 in v.items():
+            o[k][k2] = v2
+            # for k3,v3 in v2.items():
+    return o
+
 def evaluate_accuracy_evolution():
     suites = analysis.calculate_time(create_suites)(layers)
     tests = analysis.calculate_time(create_tests)(layers)
@@ -263,15 +275,37 @@ def evaluate_accuracy_evolution():
 
     # analysis.save_test_results(results)
 
-    o = m.convert(results)
-    with open('results-new.json', 'w') as outfile:
-        json.dump(o, outfile)
-    with open('results-updated.json', 'w') as outfile:
-        json.dump(current.extend(o), outfile)
-
     # if ENABLE_ROUND_PROGRESS_PLOT:
     #     analysis.calculate_time(analysis.plot_rounds)(results)
 
 
+def run_non_fed_and_save():
+    suites = analysis.calculate_time(create_suites)(layers)
+    tests = analysis.calculate_time(create_tests)(layers)
+
+    current = None
+    with open('results.json') as f:
+        current = json.load(f)
+
+    m = MultiProcessing(MULTIPROCESSED)
+    results = {}
+    results = m.run_non_fed(results, suites, True, True)
+
+    o = m.convert(results)
+    with open('results-traditional-new.json', 'w') as outfile:
+        json.dump(o, outfile)
+    with open('results-traditional-updated.json', 'w') as outfile:
+        json.dump(u(current,o), outfile)
+
+
 if __name__ == "__main__":
     analysis.calculate_time(evaluate_accuracy_evolution)()
+
+    # with open('results.json') as f:
+    #     current = json.load(f)
+    
+    # with open('results-traditional-new.json') as f:
+    #     o = json.load(f)
+
+    # with open('results-traditional-updated.json', 'w') as outfile:
+    #     json.dump(u(current,o), outfile)
