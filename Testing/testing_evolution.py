@@ -17,11 +17,12 @@ import copy
 
 random.seed(242) 
 np.random.rand(242)
+NON_FED_KEY = "Traditional K-Means"
 
 ENABLE_ROUND_PROGRESS_PLOT = True
 MULTIPROCESSED = False
 PLOT = True
-NON_FED_KEY = "Traditional K-Means"
+RUN_NON_FED = False
 
 
 class MultiProcessing:
@@ -80,7 +81,7 @@ class MultiProcessing:
         }
 
     def constructAndRun(self, *args, **kwargs):
-        res = self.constructProcessTests(*args, **kwargs)
+        res = analysis.calculate_time(self.constructProcessTests)(*args, **kwargs)
         return self.run(res, **kwargs)
 
     def non_fed_k_means(self, suite):
@@ -108,7 +109,7 @@ class MultiProcessing:
                     suite=suite,
                     test=test
                 ))
-            if suite["non_fed"]:
+            if suite["non_fed"] and RUN_NON_FED:
                 results_dict[key][NON_FED_KEY] = self.createResultObjItem()
                 a = self.non_fed_k_means(suite)
                 results_dict[key][NON_FED_KEY]["end"].value = a
@@ -172,14 +173,15 @@ class DeviceSuite:
                         else:
                             indicies = np.concatenate((indicies, _indicies),0)
         indicies = np.unique(indicies)
-        data = self.suite["dataset"].get_data_for_indicies(indicies)
-        return data
+        data,labels = self.suite["dataset"].get_data_for_indicies(indicies), self.suite["dataset"].get_labels_for_indicies(indicies)
+        return data,labels
 
     def plot_round(self, target_round):
-        data = self.get_population_of_round(target_round)
-        self.sub_accuracy(data)
+        data,labels = self.get_population_of_round(target_round)
+        acc = self.sub_accuracy(data,labels)
         if self.server.PLOT:
             self.server.plotter.plot_a(int(target_round), data, self.last_pred)
+        return acc
 
     def run_rounds_with_accuracy(self, return_rounds = True):
         # data = self.suite["dataset"].data
@@ -187,8 +189,7 @@ class DeviceSuite:
         for _round, groups in self.suite["timeline"].items():
             self.server.run_round(groups, int(_round))
             if return_rounds:
-                round_accs.append(self.accuracy())
-            self.plot_round(_round)
+                round_accs.append(self.plot_round(_round))
         return round_accs
     
     def complete(self):
@@ -202,14 +203,15 @@ class DeviceSuite:
         pred_labels = self.server.classify(data)
         self.last_pred = pred_labels
         return metrics.adjusted_rand_score(labels, pred_labels)
-    def sub_accuracy(self, data):
+    def sub_accuracy(self, data,labels):
         pred_labels = self.server.classify(data)
         self.last_pred = pred_labels
+        return metrics.adjusted_rand_score(labels, pred_labels)
 
 
 def evaluate_accuracy_evolution():
-    suites = create_suites(layers)
-    tests = create_tests(layers)
+    suites = analysis.calculate_time(create_suites)(layers)
+    tests = analysis.calculate_time(create_tests)(layers)
 
     l = len(suites) * len(tests)
     max_proc = 2
