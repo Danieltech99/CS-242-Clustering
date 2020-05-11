@@ -14,7 +14,7 @@ class DataSetCollection:
         ]
     # data_sets_names = ["moons", "circles", "longblobs", "blobs", "blobs2", "circle-grouped", "blobs-grouped"]
     data_sets_names = [
-        "blobs",  
+        # "blobs",  
         "blobs2",
         # "circle-grouped",
         "blobs-grouped",
