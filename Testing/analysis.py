@@ -43,7 +43,7 @@ class MajorPlotter:
         self.height = int(devices) + 2 # plus server centers and server pred
         self.width = int(rounds)
         # plt.figure(num=None, figsize=(1, 1), dpi=300)
-        _, self.axs = plt.subplots(self.height, self.width, sharex=True, sharey=True,figsize=(10,10))
+        _, self.axs = plt.subplots(self.height, self.width, sharex=True, sharey=True,figsize=(self.width,10))
     
     def plot(self, p, data, **kwargs):
         p.scatter(data[:, 0], data[:, 1], s=1, **kwargs)

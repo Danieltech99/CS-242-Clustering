@@ -8,14 +8,14 @@ class DataSetCollection:
     noice_levels = [
         "vhigh", 
         "high", 
-        "med", 
-        "low", 
-        "vlow"
+        # "med", 
+        # "low", 
+        # "vlow"
         ]
     # data_sets_names = ["moons", "circles", "longblobs", "blobs", "blobs2", "circle-grouped", "blobs-grouped"]
     data_sets_names = [
         # "blobs",  
-        "blobs2",
+        # "blobs2",
         # "circle-grouped",
         "blobs-grouped",
     ]
@@ -54,6 +54,9 @@ class DataSetCollection:
     
     def get_set(self, name, noice_level):
         return (self.get_data_set(name, noice_level), self.get_label_set(name, noice_level))
+    
+    def get_set_true(self, name, noice_level):
+        return self.get_set(name, noice_level) + (self.get_true_label_set(name, noice_level),)
 
     def get_data_set(self, name, noice_level):
         location,key = self.file_map[name]
@@ -66,15 +69,26 @@ class DataSetCollection:
         data_source = getattr(self, "labeled_"+location)
         res = data_source[self.construct_key(key,noice_level)][::4]
         return res
+    
+    def get_true_label_set(self, name, noice_level):
+        location,key = self.file_map[name]
+        data_source = getattr(self, "labeled_"+location)
+        res = data_source[self.construct_key(key,noice_level)+"_true"][::4]
+        return res
 
 class DataSet:
     data = None
-    labeled_data = None,
+    labeled_data = None
+    true_labels = None
     count = None
 
-    def __init__(self, data, labels):
+    def __init__(self, data, labels, true_labels = None):
         self.data = data
         self.labeled_data = labels
+        if true_labels is not None:
+            self.true_labels = true_labels
+        else: 
+            self.true_labels = self.labeled_data
         self.count = np.max(labels) + 1
     
     def add_label_to_data(self):
