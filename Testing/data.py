@@ -133,6 +133,12 @@ class DataSet:
         res["sample"] = lambda: [self.data[i] for i in np.random.choice(self.get_indices_for_label_c(group), size=size, replace=False)]
         res["population"] = lambda: self.get_indices_for_label_c(group)
         return res
+
+    def rand_iid(self, *, size, group, perc):
+        res = {}
+        res["sample"] = lambda: [self.data[i] for i in np.unique(np.concatenate((self.rand(size=size*(1-perc_iid)),self.rand_g(size=size*(perc_iid))),0))]
+        res["population"] = lambda: self.get_indices()
+        return res
     
     def get_data_for_indicies(self, indicies):
         return np.array([self.data[i] for i in indicies])

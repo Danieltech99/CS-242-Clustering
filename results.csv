@@ -1,7 +1,2 @@
-Data Set (ARI),Type,KMeans Distributed Decentralized (Gossip)  
-B,a,s,i,c, ,-, ,b,l,o,b,s,-,g,r,o,u,p,e,d, ,(,h,i,g,h,),0.0
-S,p,e,c,i,a,l,i,z,e,d, ,D,e,v,i,c,e,s, ,-, ,b,l,o,b,s,-,g,r,o,u,p,e,d, ,(,h,i,g,h,),0.0
-C,r,o,w,d, ,D,i,s,c,o,v,e,r, ,T,r,a,n,s,i,t,i,o,n,e,d, ,-, ,b,l,o,b,s,-,g,r,o,u,p,e,d, ,(,h,i,g,h,),0.0
-C,r,o,w,d, ,R,e,p,l,a,c,e,m,e,n,t, ,T,r,a,n,s,i,t,i,o,n,e,d, ,-, ,b,l,o,b,s,-,g,r,o,u,p,e,d, ,(,h,i,g,h,),0.0
-S,u,b,s,e,t, ,D,i,s,c,o,v,e,r, ,T,r,a,n,s,i,t,i,o,n,e,d, ,-, ,b,l,o,b,s,-,g,r,o,u,p,e,d, ,(,h,i,g,h,),0.0
-S,u,b,s,e,t, ,D,i,s,c,o,v,e,r, ,L,o,n,g, ,T,r,a,n,s,i,t,i,o,n,e,d, ,-, ,b,l,o,b,s,-,g,r,o,u,p,e,d, ,(,h,i,g,h,),0.0
+Data Set (ARI),Type,KMeans Distributed Decentralized (Gossip)  ,Traditional K-Means
+B,a,s,i,c, ,-, ,b,l,o,b,s,-,g,r,o,u,p,e,d, ,(,h,i,g,h,),0.0,0.9465297946462479

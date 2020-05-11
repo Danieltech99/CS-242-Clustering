@@ -107,8 +107,8 @@ class MultiProcessing:
             if suite["non_fed"]:
                 results_dict[key][NON_FED_KEY] = self.createResultObjItem()
                 a = self.non_fed_k_means(suite)
-                results_dict[key][NON_FED_KEY]["end"] = a
-                results_dict[key][NON_FED_KEY]["rounds"] = [a] * suite["rounds"]
+                results_dict[key][NON_FED_KEY]["end"].value = a
+                results_dict[key][NON_FED_KEY]["rounds"].extend([a] * suite["rounds"])
 
         return number_of_tests, specs, results_dict
 
