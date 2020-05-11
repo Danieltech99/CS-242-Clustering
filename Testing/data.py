@@ -149,6 +149,9 @@ class DataSet:
     
     def get_data_for_indicies(self, indicies):
         return np.array([self.data[i] for i in indicies])
+
+    def get_labels_for_indicies(self, indicies):
+        return np.array([self.true_labels[i] for i in indicies])
     
     def concat(self, first_group, second_group):
         return np.unique(np.concatenate((first_group,second_group),0))

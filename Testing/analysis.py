@@ -75,7 +75,7 @@ import math
   
 # decorator to calculate duration 
 # taken by any function. 
-def calculate_time(func): 
+def calculate_time(func, name = ""): 
       
     # added arguments inside the inner1, 
     # if function takes any arguments, 
@@ -89,6 +89,6 @@ def calculate_time(func):
   
         # storing time after function execution 
         delta = time.time() - begin
-        print('That took {} seconds / {} minutes'.format(delta, delta/60)) 
+        print('{} took {} seconds / {} minutes'.format(func.__name__ or "That", delta, delta/60)) 
         return res
     return inner1 
