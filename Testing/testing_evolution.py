@@ -12,6 +12,7 @@ import Testing.analysis as analysis
 from Testing.devices import Device, Server
 import time
 import math
+from Algorithms.k_means import KMeans_Server
 
 random.seed(242) 
 np.random.rand(242)
@@ -79,8 +80,8 @@ class MultiProcessing:
         return self.run(res, **kwargs)
 
     def non_fed_k_means(self, suite):
-        _, kmeans = KMeans_Server.find_optimal_k_silhouette(suite["dataset"])
-        pred_labels = kmeans.predict(suite["dataset"])
+        _, kmeans = KMeans_Server.find_optimal_k_silhouette(suite["dataset"].data)
+        pred_labels = kmeans.predict(suite["dataset"].data)
 
         labels = suite["dataset"].true_labels
         return metrics.adjusted_rand_score(labels, pred_labels)
