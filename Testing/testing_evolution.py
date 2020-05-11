@@ -60,7 +60,7 @@ class MultiProcessing:
         with progress_lock:
             number_of_tests_finished.value += 1
             o = self.convert(res)
-        with open('results-onlineness-2-inter2.json', 'w') as outfile:
+        with open('results-centralized-rerun-inter2.json', 'w') as outfile:
             json.dump(o, outfile)
             
         print('\tProgress: {}/{} Complete \t {} \t {}'.format(number_of_tests_finished.value, number_of_tests, result_dict["end"].value, name))
@@ -271,8 +271,8 @@ def evaluate_accuracy_evolution():
     print("Running {} Sets of Tests".format(sets))
 
     current = None
-    with open('results-updated.json') as f:
-        current = json.load(f)
+    # with open('results-updated.json') as f:
+    #     current = json.load(f)
 
     m = MultiProcessing(MULTIPROCESSED)
     results = {}
@@ -282,9 +282,9 @@ def evaluate_accuracy_evolution():
         print("Progress: {} of {} Complete".format(i+1, sets))
 
     o = m.convert(results)
-    with open('results-onlineness-2-new.json', 'w') as outfile:
+    with open('results-centralized-rerun-new.json', 'w') as outfile:
         json.dump(o, outfile)
-    with open('results-onlineness-2-updated.json', 'w') as outfile:
+    with open('results-centralized-rerun-updated.json', 'w') as outfile:
         if current is None: current = {}
         json.dump(u(current,o), outfile)
 
@@ -320,7 +320,7 @@ if __name__ == "__main__":
         current = json.load(f)
     
     # with open('_json_pieces/results-gossip.json') as f:
-    with open('results-onlineness-2-inter2.json') as f:
+    with open('results-centralized-rerun-new.json') as f:
         o = json.load(f)
 
     with open('results-updated.json', 'w') as outfile:
