@@ -316,17 +316,17 @@ def run_non_fed_and_save():
 
 
 if __name__ == "__main__":
-    analysis.calculate_time(evaluate_accuracy_evolution)()
+    # analysis.calculate_time(evaluate_accuracy_evolution)()
 
-    # with open('results-updated.json') as f:
-    #     current = json.load(f)
+    with open('results-updated.json') as f:
+        current = json.load(f)
     
-    # # with open('_json_pieces/results-gossip.json') as f:
-    # with open('results-subset-rerun-less-noice-new.json') as f:
-    #     o = json.load(f)
+    # with open('_json_pieces/results-gossip.json') as f:
+    with open('results-subset-rerun-less-noice-new.json') as f:
+        o = json.load(f)
 
-    # with open('results-updated.json', 'w') as outfile:
-    #     json.dump(u(current, o), outfile)
+    with open('results-updated.json', 'w') as outfile:
+        json.dump(u(current, o), outfile)
     
     # with open('results-onlineness-2-new.json') as f:
     #     o2 = json.load(f)
