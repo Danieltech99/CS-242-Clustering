@@ -74,6 +74,7 @@ layers = {
             "datasets": DataSetCollection.data_sets_names,
             "rounds": 5,
             "devices": 100, # number of devices per group
+            "devices_per_round": 10,
             "pct_data_per_device": 0.01,
             "transition": [False],
             "groups": lambda dsclass,size: {"uniform": partial(dsclass.rand, size=size)},
@@ -89,6 +90,7 @@ layers = {
             "datasets": DataSetCollection.data_sets_names,
             "rounds": 5,
             "devices": 100,
+            "devices_per_round": 10,
             "pct_data_per_device": 0.01,
             "transition": [False],
             # One group per cluster
@@ -102,6 +104,7 @@ layers = {
             "datasets": DataSetCollection.data_sets_names,
             "rounds": lambda d,size: 3 * d.count,
             "devices": 100,
+            "devices_per_round": 10,
             "pct_data_per_device": 0.01,
             "transition": [True],
             # Create groups with names counting up from 0 to count
@@ -116,6 +119,7 @@ layers = {
             "datasets": DataSetCollection.data_sets_names,
             "rounds": lambda d,size: 3 * d.count,
             "devices": 100,
+            "devices_per_round": 10,
             "pct_data_per_device": 0.01,
             "transition": [True],
             # One group per cluster
@@ -132,6 +136,7 @@ layers = {
             "datasets": DataSetCollection.data_sets_names,
             "rounds": lambda d,size: 3 * d.count,
             "devices": 100,
+            "devices_per_round": 10,
             "pct_data_per_device": 0.01,
             "transition": [True],
             # Create groups with names counting up from 0 to count
@@ -150,6 +155,7 @@ layers = {
             "datasets": DataSetCollection.data_sets_names,
             "rounds": lambda d,size: 10* d.count,
             "devices": 100,
+            "devices_per_round": 10,
             "pct_data_per_device": 0.01,
             "transition": [True],
             # Create groups with names counting up from 0 to count

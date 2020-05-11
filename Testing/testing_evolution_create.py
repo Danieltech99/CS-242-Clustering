@@ -2,7 +2,7 @@ from functools import partial
 from Testing.data import DataSet
 from Testing.config import collection
 
-def smooth(timeline,rounds,transition):
+def smooth(timeline,rounds,transition,devices_per_round):
     # add missing keys
     timeline = dict(timeline)
 
@@ -29,12 +29,22 @@ def smooth(timeline,rounds,transition):
             continue
         r = range(last_time + 1, time)
         l = len(r)
+
         for t in r:
             timeline[t] = {}
-            for key in timeline[time].keys():
+            for key,val in timeline[time].items():
                 delta_val = (timeline[time][key] - timeline[last_time][key]) / (l+1)
-                timeline[t][key] = timeline[t-1][key] + round(delta_val) if transition else timeline[t-1][key]
+                amount = timeline[t-1][key] + round(delta_val) if transition else timeline[t-1][key]
+                timeline[t][key] = round(amount)
+
         last_time = time
+    for t,v in timeline.items():
+        missing = devices_per_round - sum(timeline[t].values())
+        if missing >= 1:
+            for key in timeline[t]:
+                if timeline[t][key] >= 1:
+                    timeline[t][key] += missing
+                    break
     return timeline
 def apply_down(obj,*args,**kwargs):
     for key,value in obj.items():
@@ -57,7 +67,7 @@ def create_suites(layers):
                     suite["dataset"] = dataset
                     if transition: 
                         suite["name"] += " Transitioned"
-                    suite["timeline"] = smooth(suite["timeline"],suite["rounds"],transition)
+                    suite["timeline"] = smooth(suite["timeline"],suite["rounds"],transition, suite["devices_per_round"])
                     suite["name"] += " - {} ({})".format(data_set_name, level)
                     suites.append(suite)
     return suites

@@ -204,8 +204,14 @@ class gossip_KMeans_server:
 
         self.updates_for_devices = {i:{} for i in range(self._n_devices)}
 
+    points_read_only = None
     def run_on_server(self):
-        pass
+        self.points_read_only = None
+        for v in self.updates_for_devices.values():
+            if self.points_read_only is None:
+                self.points_read_only = v["centers"]
+            else:
+                self.points_read_only = np.concatenate((self.points_read_only, v["centers"]),axis=0)
 
     def update_server(self, reports_from_devices):
         all_reports = {report["device_id"]:report for report in reports_from_devices}
@@ -239,7 +245,6 @@ class gossip_KMeans_server:
         # Calculate new cluster center from neighbors
         for agg_round in range(self._n_aggregate_rounds):
             for device_id in range(self._n_devices):
-                print("HELLO", device_id) 
                 device_cache = tmp_caches[device_id]
                 target_id = random.sample(device_cache,1)[0]
                 
@@ -266,7 +271,7 @@ class gossip_KMeans_server:
         for device_id in range(self._n_devices):
             update = {
                         "cache": tmp_caches[device_id],
-                        "centers": tmp_center_sums[device_id] / max(0.00000001,tmp_weights[device_id][:, None])
+                        "centers": tmp_center_sums[device_id] / np.maximum(0.00000001,tmp_weights[device_id][:, None])
                      }      
             updates_for_devices[device_id] = update
 

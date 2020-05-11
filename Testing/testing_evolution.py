@@ -18,7 +18,8 @@ np.random.rand(242)
 
 ENABLE_ROUND_PROGRESS_PLOT = True
 MULTIPROCESSED = True
-PLOT = False
+PLOT = True
+NON_FED_KEY = "Traditional K-Means"
 
 
 class MultiProcessing:
@@ -77,6 +78,13 @@ class MultiProcessing:
         res = self.constructProcessTests(*args, **kwargs)
         return self.run(res, **kwargs)
 
+    def non_fed_k_means(self, suite):
+        _, kmeans = KMeans_Server.find_optimal_k_silhouette(suite["dataset"])
+        pred_labels = kmeans.predict(suite["dataset"])
+
+        labels = suite["dataset"].true_labels
+        return metrics.adjusted_rand_score(labels, pred_labels)
+
     def constructProcessTests(self, suites, tests, **kwargs):
         # Create a list of process specs
         number_of_tests = 0
@@ -95,6 +103,12 @@ class MultiProcessing:
                     suite=suite,
                     test=test
                 ))
+            if suite["non_fed"]:
+                results_dict[key][NON_FED_KEY] = self.createResultObjItem()
+                a = self.non_fed_k_means(suite)
+                results_dict[key][NON_FED_KEY]["end"] = a
+                results_dict[key][NON_FED_KEY]["rounds"] = [a] * suite["rounds"]
+
         return number_of_tests, specs, results_dict
 
 
@@ -122,13 +136,14 @@ class DeviceSuite:
 
         rounds = len(self.suite["timeline"])
         max_devices = 0
-        for x in self.suite["timeline"].values():
-            max_devices = max(sum(x.values()),max_devices)
     
         if "device_multi" in self.test:
             for t,groups in self.suite["timeline"].items():
                 for group, num_devices in groups.items():
                     self.suite["timeline"][t][group] = num_devices * self.test["device_multi"]
+        
+        for x in self.suite["timeline"].values():
+            max_devices = max(sum(x.values()),max_devices)
         
         if PLOT:
             self.server.define_plotter(rounds = rounds, devices=max_devices)

@@ -232,7 +232,8 @@ class CURE_Server_Keep(CURE_Server):
 
 from sklearn.cluster import KMeans
 class KMeans_Server(CURE_Server):
-    def find_optimal_k_silhouette(self, data, max_k=20):
+    @staticmethod
+    def find_optimal_k_silhouette(data, max_k=20):
         silhouette_scores = []
         models = {}
         for k in range(2, max_k+1):
@@ -257,7 +258,7 @@ class KMeans_Server(CURE_Server):
 
         self.points_read_only = clusters_from_devices
         # kmeans = KMeans(n_clusters=self._n_clusters, random_state=0).fit(clusters_from_devices)
-        _, kmeans = self.find_optimal_k_silhouette(clusters_from_devices)
+        _, kmeans = KMeans_Server.find_optimal_k_silhouette(clusters_from_devices)
 
         representors = kmeans.cluster_centers_
         self.representors = representors
