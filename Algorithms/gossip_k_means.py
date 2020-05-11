@@ -44,25 +44,6 @@ class gossip_KMeans_Device:
 
         self.state = "ACTIVE"
 
-        # self.error = float("Inf")
-        # self.local_error = None
-
-        # if id_num == 0:
-        #     self.cache = [1, self._n_devices]
-        # elif id_num == self._n_devices - 1:
-        #     self.cache = [0, self._n_devices]
-        # else:
-        #     self.cache = [self._id_num - 1, self._id_num + 1]
-        # self.cache = set(self.cache)
-
-        # if self._global_init is None:
-        #     if id_num == 0:
-        #         self.centers = self._init_cluster_centers(self._data)
-        #     else:
-        #         self.centers = None
-        # else:
-        #     self.centers = self._global_init
-        
         self.local_centers = None
 
         self.labels = None
@@ -119,7 +100,6 @@ class gossip_KMeans_Device:
         local_centers, local_counts = self._compute_centers_counts(data, labels, n_centers)
 
         self.labels = labels
-        # self.local_error = local_error
         self.local_centers = local_centers
         self.local_counts = local_counts
 
@@ -183,15 +163,6 @@ class gossip_KMeans_Device:
 
 
     def update_device(self, reports_from_server):
-        # if reports_from_server is None:
-        #     return
-
-        # device_update = reports_from_server[self._id_num]
-        # self.cache = device_update["cache"]
-        # self.centers = device_update["centers"]
-        # # self.counts = device_update["counts"]
-        # # self.error = device_update["error"]
-
         self._latest_update = reports_from_server
 
 
@@ -242,16 +213,22 @@ class gossip_KMeans_server:
         tmp_caches = {device_id:report["cache"]
                        for device_id, report in all_reports.items()}
 
+
         # Calculate new cluster center from neighbors
         for agg_round in range(self._n_aggregate_rounds):
-            for device_id in range(self._n_devices):
+            rand_device_ids = list(range(self._n_devices))
+            random.shuffle(rand_device_ids)
+
+            for device_id in rand_device_ids:
                 device_cache = tmp_caches[device_id]
                 target_id = random.sample(device_cache,1)[0]
+               
                 
                 # update sums and weights
                 tmp_center_sums[device_id] = tmp_center_sums[device_id] + \
-                    1/2 * tmp_center_sums[target_id] * tmp_weights[target_id][:, None]
+                    1/2 * tmp_center_sums[target_id]
                 tmp_weights[device_id] = tmp_weights[device_id] + 1/2*tmp_weights[target_id]
+
                 
                 # sync caches
                 merged_cache = tmp_caches[device_id].union(tmp_caches[target_id])
