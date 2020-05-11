@@ -252,6 +252,7 @@ class DeviceSuite:
 def u(obj1,obj2):
     o = copy.deepcopy(obj1)
     for k,v in obj2.items():
+        if k not in o: o[k] = {}
         for k2,v2 in v.items():
             o[k][k2] = v2
             # for k3,v3 in v2.items():
@@ -318,7 +319,7 @@ if __name__ == "__main__":
     with open('results.json') as f:
         current = json.load(f)
     
-    with open('results-traditional-new.json') as f:
+    with open('_json_pieces/results-gossip.json') as f:
         o = json.load(f)
 
     with open('results.json', 'w') as outfile:
