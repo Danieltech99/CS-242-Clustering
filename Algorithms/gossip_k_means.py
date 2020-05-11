@@ -5,9 +5,9 @@ from sklearn.cluster import KMeans
 
 
 device_params = {
-    "N_CLUSTERS": 10,
+    "N_CLUSTERS": 6,
     "N_INITS": 10,
-    "N_DEVICES": 10,
+    "N_DEVICES": 20,
     "CACHE_SIZE": 4,
     "GLOBAL_INIT": False,
     "METRIC": "euclidean",
@@ -16,9 +16,9 @@ device_params = {
 }
 
 server_params = {
-    "N_CLUSTERS": 4,
-    "N_DEVICES": 10,
-    "N_AGGREGATE_ROUNDS": 5
+    "N_CLUSTERS": 6,
+    "N_DEVICES": 20,
+    "N_AGGREGATE_ROUNDS": 3
 }
 
 
@@ -154,8 +154,10 @@ class gossip_KMeans_Device:
 
 
     def update_device(self, reports_from_server):
-        device_update = reports_from_server[self._id_num]
+        if reports_from_server is None:
+            return
 
+        device_update = reports_from_server[self._id_num]
         self.cache = device_update["cache"]
         self.centers = device_update["centers"]
         # self.counts = device_update["counts"]
