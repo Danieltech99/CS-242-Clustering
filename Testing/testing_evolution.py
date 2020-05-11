@@ -138,7 +138,9 @@ class MultiProcessing:
 
             added = 0
             for test in tests:
-                if current is None or len(current[key][test["name"]]["rounds"]) == 0:
+                if current is None or key not in current or len(current[key][test["name"]]["rounds"]) == 0:
+                    if current is not None and key not in current:
+                        results_dict[key] = {}
                     added += 1
                     results_dict[key][test["name"]] = self.createResultObjItem()
                     specs.append(dict(
@@ -268,8 +270,8 @@ def evaluate_accuracy_evolution():
     print("Running {} Sets of Tests".format(sets))
 
     current = None
-    with open('results-inter.json') as f:
-        current = json.load(f)
+    # with open('results-inter.json') as f:
+    #     current = json.load(f)
 
     m = MultiProcessing(MULTIPROCESSED)
     results = {}
@@ -282,6 +284,7 @@ def evaluate_accuracy_evolution():
     with open('results-new.json', 'w') as outfile:
         json.dump(o, outfile)
     with open('results-updated.json', 'w') as outfile:
+        if current is None: current = {}
         json.dump(u(current,o), outfile)
 
     # analysis.save_test_results(results)
@@ -310,13 +313,13 @@ def run_non_fed_and_save():
 
 
 if __name__ == "__main__":
-    analysis.calculate_time(evaluate_accuracy_evolution)()
+    # analysis.calculate_time(evaluate_accuracy_evolution)()
 
-    # with open('results.json') as f:
-    #     current = json.load(f)
+    with open('results.json') as f:
+        current = json.load(f)
     
-    # with open('results-traditional-new.json') as f:
-    #     o = json.load(f)
+    with open('results-traditional-new.json') as f:
+        o = json.load(f)
 
-    # with open('results-traditional-updated.json', 'w') as outfile:
-    #     json.dump(u(current,o), outfile)
+    with open('results.json', 'w') as outfile:
+        json.dump(u(current,o), outfile)
