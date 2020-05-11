@@ -322,6 +322,9 @@ if __name__ == "__main__":
     # with open('_json_pieces/results-gossip.json') as f:
     with open('results-centralized-rerun-new.json') as f:
         o = json.load(f)
+    
+    with open('results-onlineness-2-new.json') as f:
+        o2 = json.load(f)
 
     with open('results-updated.json', 'w') as outfile:
-        json.dump(u(current,o), outfile)
+        json.dump(u(u(current,o2), o), outfile)
