@@ -44,24 +44,24 @@ class gossip_KMeans_Device:
 
         self.state = "ACTIVE"
 
-        if id_num == 0:
-            self.cache = [1, self._n_devices]
-        elif id_num == self._n_devices - 1:
-            self.cache = [0, self._n_devices]
-        else:
-            self.cache = [self._id_num - 1, self._id_num + 1]
-        self.cache = set(self.cache)
-
         # self.error = float("Inf")
         # self.local_error = None
 
-        if self._global_init is None:
-            if id_num == 0:
-                self.centers = self._init_cluster_centers(self._data)
-            else:
-                self.centers = None
-        else:
-            self.centers = self._global_init
+        # if id_num == 0:
+        #     self.cache = [1, self._n_devices]
+        # elif id_num == self._n_devices - 1:
+        #     self.cache = [0, self._n_devices]
+        # else:
+        #     self.cache = [self._id_num - 1, self._id_num + 1]
+        # self.cache = set(self.cache)
+
+        # if self._global_init is None:
+        #     if id_num == 0:
+        #         self.centers = self._init_cluster_centers(self._data)
+        #     else:
+        #         self.centers = None
+        # else:
+        #     self.centers = self._global_init
         
         self.local_centers = None
 
@@ -71,6 +71,37 @@ class gossip_KMeans_Device:
         self.local_counts = None
 
         self._large_number = 9999
+
+        self._latest_update = None
+
+    
+    def set_id_number(self, id_num):
+        # get id_number
+        self._id_num = id_num
+
+        latest_update = self._latest_update
+        if latest_update is None:
+            # instantiate cache
+            if id_num == 0:
+                self.cache = [1, self._n_devices]
+            elif id_num == self._n_devices - 1:
+                self.cache = [0, self._n_devices]
+            else:
+                self.cache = [self._id_num - 1, self._id_num + 1]
+            self.cache = set(self.cache)
+
+            # Initialize cluster center if needed
+            if self._global_init is None:
+                if id_num == 0:
+                    self.centers = self._init_cluster_centers(self._data)
+                else:
+                    self.centers = None
+            else:
+                self.centers = self._global_init
+        else:
+            device_update = latest_update[self._id_num]
+            self.cache = device_update["cache"]
+            self.centers = device_update["centers"]
         
         
     def run_on_device(self):
@@ -141,7 +172,6 @@ class gossip_KMeans_Device:
 
 
     def get_report_for_server(self):
-        
         updates_for_server = {
                               "device_id": self._id_num,
                               "cache": self.cache,
@@ -154,14 +184,16 @@ class gossip_KMeans_Device:
 
 
     def update_device(self, reports_from_server):
-        if reports_from_server is None:
-            return
+        # if reports_from_server is None:
+        #     return
 
-        device_update = reports_from_server[self._id_num]
-        self.cache = device_update["cache"]
-        self.centers = device_update["centers"]
-        # self.counts = device_update["counts"]
-        # self.error = device_update["error"]
+        # device_update = reports_from_server[self._id_num]
+        # self.cache = device_update["cache"]
+        # self.centers = device_update["centers"]
+        # # self.counts = device_update["counts"]
+        # # self.error = device_update["error"]
+
+        self._latest_update = reports_from_server
 
 
 
