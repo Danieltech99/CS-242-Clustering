@@ -28,7 +28,7 @@ class DataSetCollection:
         "longblobs": 3,
         "blobs2": 3,
         "circle-grouped": 4,
-        "blobs-grouped": 9,
+        "blobs-grouped": 6,
     }
     file_map = {
         "moons" : ("data", "circles"),
@@ -92,18 +92,18 @@ class DataSet:
             self.true_labels = self.labeled_data
         self.count = np.max(labels) + 1
     
-    def add_label_to_data(self):
-        return np.column_stack((self.data,self.labeled_data))
-    
     def get_indices(self):
         return np.arange(0, self.data.shape[0])
     
     def get_indices_for_label(self, label_num):
-        return self.get_indices()[self.labeled_data == label_num]
+        return self.get_indices()[self.true_labels == label_num]
     
     def get_indices_for_label_c(self, label_num):
-        return self.get_indices()[self.labeled_data <= label_num]
+        return self.get_indices()[self.true_labels <= label_num]
     
+    def get_indices_for_label_cross(self, label_num):
+        return self.get_indices()[self.labeled_data == label_num]
+
     # def get_data(self):
     #     indicies = self.get_indices()
     #     return [self.data[i] for i in indicies]
@@ -127,6 +127,12 @@ class DataSet:
         res = {}
         res["sample"] = lambda: [self.data[i] for i in np.random.choice(self.get_indices_for_label(group), size=size, replace=False)]
         res["population"] = lambda: self.get_indices_for_label(group)
+        return res
+    
+    def rand_g_cross(self, *, size, group):
+        res = {}
+        res["sample"] = lambda: [self.data[i] for i in np.random.choice(self.get_indices_for_label_cross(group), size=size, replace=False)]
+        res["population"] = lambda: self.get_indices_for_label_cross(group)
         return res
     
     def rand_g_c(self, *, size, group):

@@ -21,8 +21,8 @@ NON_FED_KEY = "Traditional K-Means"
 
 ENABLE_ROUND_PROGRESS_PLOT = True
 MULTIPROCESSED = False
-PLOT = True
-RUN_NON_FED = False
+PLOT = False
+RUN_NON_FED = True
 
 
 class MultiProcessing:
@@ -46,7 +46,7 @@ class MultiProcessing:
 
         with progress_lock:
             number_of_tests_finished.value += 1
-            print('\tProgress: {}/{} Complete \t {} \t {}'.format(number_of_tests_finished.value, number_of_tests, result_dict["end"].value, name))
+        print('\tProgress: {}/{} Complete \t {} \t {}'.format(number_of_tests_finished.value, number_of_tests, result_dict["end"].value, name))
 
     def run(self, construction, **kwargs):
         # Take a list of process specs and run in parallel
@@ -67,6 +67,8 @@ class MultiProcessing:
                 p = multiprocessing.Process(target=self.run_single, kwargs=kwargs)
                 processes.append(p)
                 p.start()
+
+        self.run_non_fed()
 
         if self.MULTIPROCESSED:
             for process in processes:
@@ -91,6 +93,15 @@ class MultiProcessing:
         labels = suite["dataset"].true_labels
         return metrics.adjusted_rand_score(labels, pred_labels)
 
+    def run_non_fed(self):
+        for suite in self.suites:
+            key = suite["name"]
+            if suite["non_fed"] and RUN_NON_FED:
+                results_dict[key][NON_FED_KEY] = self.createResultObjItem()
+                a = self.non_fed_k_means(suite)
+                results_dict[key][NON_FED_KEY]["end"].value = a
+                results_dict[key][NON_FED_KEY]["rounds"].extend([a] * suite["rounds"])
+
     def constructProcessTests(self, suites, tests, **kwargs):
         # Create a list of process specs
         number_of_tests = 0
@@ -109,12 +120,8 @@ class MultiProcessing:
                     suite=suite,
                     test=test
                 ))
-            if suite["non_fed"] and RUN_NON_FED:
-                results_dict[key][NON_FED_KEY] = self.createResultObjItem()
-                a = self.non_fed_k_means(suite)
-                results_dict[key][NON_FED_KEY]["end"].value = a
-                results_dict[key][NON_FED_KEY]["rounds"].extend([a] * suite["rounds"])
 
+        self.suites = suites
         return number_of_tests, specs, results_dict
 
 
@@ -130,7 +137,7 @@ class DeviceSuite:
         test,
         name = None
     ):
-        self.suite = suite
+        self.suite = copy.deepcopy(suite)
         self.test = test
         self.name = name
         counter = 0
@@ -214,7 +221,7 @@ def evaluate_accuracy_evolution():
     tests = analysis.calculate_time(create_tests)(layers)
 
     l = len(suites) * len(tests)
-    max_proc = 2
+    max_proc = 40
     split_n = math.floor(l/(l/max_proc))
     split_n = math.ceil(split_n / len(tests))
     partitions = [suites[i:i + split_n] for i in range(0, len(suites), split_n)]
@@ -228,10 +235,10 @@ def evaluate_accuracy_evolution():
         results.update(res)
         print("Progress: {} of {} Complete".format(i+1, sets))
 
-    analysis.save_test_results(results)
+    # analysis.save_test_results(results)
 
     if ENABLE_ROUND_PROGRESS_PLOT:
-        analysis.plot_rounds(results)
+        analysis.calculate_time(analysis.plot_rounds)(results)
 
 
 if __name__ == "__main__":

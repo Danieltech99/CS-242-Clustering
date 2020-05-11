@@ -82,7 +82,7 @@ def create_tests(layers):
                     for device_param_name, device_params in device_params_dict.items():
                         tests.append({
                             "name": alg["name"] + server_param_name + device_param_name,
-                            "device_multi": alg.get("device_multi",0),
+                            "device_multi": alg.get("device_multi",1),
                             "server": partial(alg["server"]["class"], **{server_params_key: server_params}),
                             "device": partial(alg["device"]["class"], **{device_params_key: device_params})
                         })

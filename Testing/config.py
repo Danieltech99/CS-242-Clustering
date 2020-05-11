@@ -23,7 +23,7 @@ layer_map = dict(
     k_means_device_params = {
         " ": {"N_CLUSTERS": 10, # device mid clusters
             "MAX_ITERS": 100,
-            "N_INITS": 10,
+            "N_INITS": 5,
             "METRIC": "euclidean",
             "TOLERANCE": None,
             "KEEP_EMPTY_CLUSTERS": True},
@@ -121,7 +121,7 @@ layers = {
             "timeline": lambda d,size: {0: reduce((lambda o, s: o.update({s: round(10/d.count)}) or o), range(d.count), {})},
         },
         {
-            "name": "Specialized Devices",
+            "name": "100% IID",
             "non_fed": True,
             "datasets": DataSetCollection.data_sets_names,
             "rounds": 5,
@@ -131,6 +131,20 @@ layers = {
             "transition": [False],
             # One group per cluster
             "groups": lambda d,s: {g: partial(d.rand_g, size=s,group=g) for g in range(d.count)},
+            # All rounds (round 0), sample evenly from all groups
+            "timeline": lambda d,size: {0: reduce((lambda o, s: o.update({s: round(10/d.count)}) or o), range(d.count), {})},
+        },
+        {
+            "name": "Specialized Devices",
+            "non_fed": True,
+            "datasets": DataSetCollection.data_sets_names,
+            "rounds": 5,
+            "devices": 100,
+            "devices_per_round": 10,
+            "pct_data_per_device": 0.01,
+            "transition": [False],
+            # One group per cluster
+            "groups": lambda d,s: {g: partial(d.rand_g_cross, size=s,group=g) for g in range(d.count)},
             # All rounds (round 0), sample evenly from all groups
             "timeline": lambda d,size: {0: reduce((lambda o, s: o.update({s: round(10/d.count)}) or o), range(d.count), {})},
         },
@@ -240,16 +254,16 @@ layers = {
     ],
     "algs": [
         {
-            "name": "KMeans Distributed Centralized",
-            "device_multi": 10,
-            "server": {"class": KMeans_Server_Keep, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
-            "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
-        },
-        {
             "name": "KMeans Distributed Decentralized (Gossip)",
             "device_multi": 10,
             "server": {"class": gossip_KMeans_server, "kwargs": dict(params=layer_map["gossip_server_params"])},
             "device": {"class": gossip_KMeans_Device, "kwargs": dict(params=layer_map["gossip_device_params"])},
+        },
+        {
+            "name": "KMeans Distributed Centralized",
+            "device_multi": 10,
+            "server": {"class": KMeans_Server_Keep, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
+            "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
         },
         # {
         #     "name": "SOM (Fed)",

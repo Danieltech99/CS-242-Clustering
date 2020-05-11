@@ -78,6 +78,7 @@ class Server:
             self.PLOT = False
         devices = []
         for group,num_of_devices in num_devices_per_group_dict.items():
+            # print("picking", num_of_devices, "from ", len(self.device_groups[group]))
             devices += random.sample(self.device_groups[group],int(num_of_devices))
         if len(devices) == 0:
             print("NO DEVICES IN ROUND", num_devices_per_group_dict)
