@@ -60,7 +60,7 @@ class MultiProcessing:
         with progress_lock:
             number_of_tests_finished.value += 1
             o = self.convert(res)
-        with open('results-centralized-rerun-inter2.json', 'w') as outfile:
+        with open('results-subset-rerun-inter2.json', 'w') as outfile:
             json.dump(o, outfile)
             
         print('\tProgress: {}/{} Complete \t {} \t {}'.format(number_of_tests_finished.value, number_of_tests, result_dict["end"].value, name))
@@ -188,6 +188,8 @@ class DeviceSuite:
         
         for x in self.suite["timeline"].values():
             max_devices = max(sum(x.values()),max_devices)
+
+        # print("timeline", name, max_devices, self.suite["timeline"])
         
         if PLOT:
             self.server.define_plotter(rounds = rounds, devices=max_devices)
@@ -282,9 +284,9 @@ def evaluate_accuracy_evolution():
         print("Progress: {} of {} Complete".format(i+1, sets))
 
     o = m.convert(results)
-    with open('results-centralized-rerun-new.json', 'w') as outfile:
+    with open('results-subset-rerun-new.json', 'w') as outfile:
         json.dump(o, outfile)
-    with open('results-centralized-rerun-updated.json', 'w') as outfile:
+    with open('results-subset-rerun-updated.json', 'w') as outfile:
         if current is None: current = {}
         json.dump(u(current,o), outfile)
 
@@ -320,11 +322,14 @@ if __name__ == "__main__":
         current = json.load(f)
     
     # with open('_json_pieces/results-gossip.json') as f:
-    with open('results-centralized-rerun-new.json') as f:
+    with open('results-subset-rerun-new.json') as f:
         o = json.load(f)
-    
-    with open('results-onlineness-2-new.json') as f:
-        o2 = json.load(f)
 
     with open('results-updated.json', 'w') as outfile:
-        json.dump(u(u(current,o2), o), outfile)
+        json.dump(u(current, o), outfile)
+    
+    # with open('results-onlineness-2-new.json') as f:
+    #     o2 = json.load(f)
+
+    # with open('results-updated.json', 'w') as outfile:
+    #     json.dump(u(u(current,o2), o), outfile)

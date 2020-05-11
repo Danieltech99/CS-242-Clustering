@@ -296,3 +296,11 @@ class KMeans_Server_Keep(KMeans_Server):
         if self.prev_round_info is None:
             self.prev_round_info = self.clusters_from_devices
         self.clusters_from_devices = np.concatenate((self.clusters_from_devices, self.prev_round_info), axis=0)
+
+class KMeans_Server_Central(KMeans_Server):
+    def get_report_for_server(self):
+        pass
+
+class KMeans_Device_Central(K_Means_Device):
+    def update_device(self, reports_from_server):
+        pass

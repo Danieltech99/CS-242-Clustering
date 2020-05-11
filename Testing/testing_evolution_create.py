@@ -36,16 +36,24 @@ def smooth(timeline,rounds,transition,devices_per_round):
             for key,val in timeline[time].items():
                 delta_val = (timeline[time][key] - timeline[last_time][key]) / (l+1)
                 amount = timeline[t-1][key] + round(delta_val) if transition else timeline[t-1][key]
-                timeline[t][key] = round(amount)
+                timeline[t][key] = max(round(amount),0)
 
         last_time = time
     for t,v in timeline.items():
         missing = devices_per_round - sum(timeline[t].values())
-        if missing >= 1:
+        if missing != 0:
             for key in timeline[t]:
                 if timeline[t][key] >= 1:
+                    # print("adding", missing, key, timeline[t])
                     timeline[t][key] += missing
                     break
+    for t,v in timeline.items():
+        missing = sum(timeline[t].values())
+        if missing > 12:
+            print("AHHHH", missing, t, timeline[t])
+            print("AHHHH", missing, t, timeline[t])
+            print("AHHHH", missing, t, timeline[t])
+            print("AHHHH", missing, t, timeline[t])
     return timeline
 def apply_down(obj,*args,**kwargs):
     for key,value in obj.items():
