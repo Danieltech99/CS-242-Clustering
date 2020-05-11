@@ -32,6 +32,21 @@ layer_map = dict(
         " ": {"N_CLUSTERS": 3,
             "N_REP_POINTS": 1,
             "COMPRESSION": 0.05},
+    },
+    gossip_device_params = {
+        "N_DEVICES": 20,
+        "N_CLUSTERS": 6,
+        "N_INITS": 10,
+        "CACHE_SIZE": 4,
+        "GLOBAL_INIT": False,
+        "METRIC": "euclidean",
+        "MAX_ITERS": 100,
+        "TOLERANCE": None
+    },
+    gossip_server_params = {
+        "N_DEVICES": 20,
+        "N_CLUSTERS": 6,
+        "N_AGGREGATE_ROUNDS": 3
     }
 )
 
@@ -48,74 +63,97 @@ from Algorithms.som import SOM_Device, SOM_server
 layers = {
     "noice": (lambda dataset: collection.noice_levels[:-1] if dataset == "circles-grouped" else collection.noice_levels),
     "suites": [
-        # {
-        #     "name": "Basic",
-        #     "datasets": DataSetCollection.data_sets_names,
-        #     "rounds": 5,
-        #     "devices": 20, # number of devices per group
-        #     "pct_data_per_device": 0.05,
-        #     "transition": [False],
-        #     "groups": lambda dsclass,size: {"uniform": partial(dsclass.rand, size=size)},
-        #     "timeline": {
-        #         0: {
-        #             "uniform": 10 # number of devices per round
-        #         },
-        #     }
-        # },
-        # {
-        #     "name": "Crowd Discover",
-        #     "datasets": DataSetCollection.data_sets_names,
-        #     "rounds": lambda d,size: 3 * d.count,
-        #     "devices": 20,
-        #     "pct_data_per_device": 0.05,
-        #     "transition": [True, False],
-        #     # Create groups with names counting up from 0 to count
-        #     # group n has datapoints from cluster n and is concated with group n-1
-        #     "groups": lambda d,s: {g: partial(d.rand_g_c, size=s,group=g) for g in range(d.count)},
-        #     # At each 3n rounds, switch to group n
-        #     "timeline": lambda d,size: reduce((lambda o, s: o.update({3*s: {s: 10}}) or o), range(d.count), {}),
-        # },
-        # {
-        #     "name": "Specialized Devices",
-        #     "datasets": DataSetCollection.data_sets_names,
-        #     "rounds": 5,
-        #     "devices": 20,
-        #     "pct_data_per_device": 0.05,
-        #     "transition": [False],
-        #     # One group per cluster
-        #     "groups": lambda d,s: {g: partial(d.rand_g, size=s,group=g) for g in range(d.count)},
-        #     # All rounds (round 0), sample evenly from all groups
-        #     "timeline": lambda d,size: {0: reduce((lambda o, s: o.update({s: round(10/d.count)}) or o), range(d.count), {})},
-        # },
-        # {
-        #     "name": "Crowd Replacement",
-        #     "datasets": DataSetCollection.data_sets_names,
-        #     "rounds": lambda d,size: 3 * d.count,
-        #     "devices":20,
-        #     "pct_data_per_device": 0.05,
-        #     "transition": [True, False],
-        #     # One group per cluster
-        #     "groups": lambda d,s: {g: partial(d.rand_g, size=s,group=g) for g in range(d.count)},
-        #     # At each 3n rounds, switch to group n
-        #     "timeline": lambda d,size: reduce((lambda o, s: o.update({3*s: {s: 10}}) or o), range(d.count), {}),
-        # },
-        # {
-        #     # Start with all devices having cluster 1
-        #     # After 3 rounds, let 20 devices discover another cluster
-        #     # After another 3, let the same 20 discover another
-        #     "name": "Subset Discover",
-        #     "datasets": DataSetCollection.data_sets_names,
-        #     "rounds": lambda d,size: 3 * d.count,
-        #     "devices": 20,
-        #     "pct_data_per_device": 0.05,
-        #     "transition": [True, False],
-        #     # Create groups with names counting up from 0 to count
-        #     # group n has datapoints from cluster n and is concated with group n-1
-        #     "groups": lambda d,s: {g: partial(d.rand_g_c, size=s,group=g) for g in range(d.count)},
-        #     # Start all devices at group 1,
-        #     # Move 20 devices up a group every 3 rounds
-        #     "timeline": lambda d,size: reduce((lambda o, s: o.update({3*s: {s: 2, 0: (10 if s == 0 else 8)}}) or o), range(d.count), {}),
-        # },
+        {
+            "name": "Basic",
+            "non_fed": True,
+            "datasets": DataSetCollection.data_sets_names,
+            "rounds": 5,
+            "devices": 100, # number of devices per group
+            "pct_data_per_device": 0.01,
+            "transition": [False],
+            "groups": lambda dsclass,size: {"uniform": partial(dsclass.rand, size=size)},
+            "timeline": {
+                0: {
+                    "uniform": 10 # number of devices per round
+                },
+            }
+        },
+        {
+            "name": "Specialized Devices",
+            "non_fed": True,
+            "datasets": DataSetCollection.data_sets_names,
+            "rounds": 5,
+            "devices": 100,
+            "pct_data_per_device": 0.01,
+            "transition": [False],
+            # One group per cluster
+            "groups": lambda d,s: {g: partial(d.rand_g, size=s,group=g) for g in range(d.count)},
+            # All rounds (round 0), sample evenly from all groups
+            "timeline": lambda d,size: {0: reduce((lambda o, s: o.update({s: round(10/d.count)}) or o), range(d.count), {})},
+        },
+        {
+            "name": "Crowd Discover",
+            "non_fed": False,
+            "datasets": DataSetCollection.data_sets_names,
+            "rounds": lambda d,size: 3 * d.count,
+            "devices": 100,
+            "pct_data_per_device": 0.01,
+            "transition": [True],
+            # Create groups with names counting up from 0 to count
+            # group n has datapoints from cluster n and is concated with group n-1
+            "groups": lambda d,s: {g: partial(d.rand_g_c, size=s,group=g) for g in range(d.count)},
+            # At each 3n rounds, switch to group n
+            "timeline": lambda d,size: reduce((lambda o, s: o.update({3*s: {s: 10}}) or o), range(d.count), {}),
+        },
+        {
+            "name": "Crowd Replacement",
+            "non_fed": False,
+            "datasets": DataSetCollection.data_sets_names,
+            "rounds": lambda d,size: 3 * d.count,
+            "devices": 100,
+            "pct_data_per_device": 0.01,
+            "transition": [True],
+            # One group per cluster
+            "groups": lambda d,s: {g: partial(d.rand_g, size=s,group=g) for g in range(d.count)},
+            # At each 3n rounds, switch to group n
+            "timeline": lambda d,size: reduce((lambda o, s: o.update({3*s: {s: 10}}) or o), range(d.count), {}),
+        },
+        {
+            # Start with all devices having cluster 1
+            # After 3 rounds, let 20 devices discover another cluster
+            # After another 3, let the same 20 discover another
+            "name": "Subset Discover",
+            "non_fed": False,
+            "datasets": DataSetCollection.data_sets_names,
+            "rounds": lambda d,size: 3 * d.count,
+            "devices": 100,
+            "pct_data_per_device": 0.01,
+            "transition": [True],
+            # Create groups with names counting up from 0 to count
+            # group n has datapoints from cluster n and is concated with group n-1
+            "groups": lambda d,s: {g: partial(d.rand_g_c, size=s,group=g) for g in range(d.count)},
+            # Start all devices at group 1,
+            # Move 20 devices up a group every 3 rounds
+            "timeline": lambda d,size: reduce((lambda o, s: o.update({3*s: {s: 2, 0: (10 if s == 0 else 8)}}) or o), range(d.count), {}),
+        },
+        {
+            # Start with all devices having cluster 1
+            # After 3 rounds, let 20 devices discover another cluster
+            # After another 3, let the same 20 discover another
+            "name": "Subset Discover Long",
+            "non_fed": False,
+            "datasets": DataSetCollection.data_sets_names,
+            "rounds": lambda d,size: 10* d.count,
+            "devices": 100,
+            "pct_data_per_device": 0.01,
+            "transition": [True],
+            # Create groups with names counting up from 0 to count
+            # group n has datapoints from cluster n and is concated with group n-1
+            "groups": lambda d,s: {g: partial(d.rand_g_c, size=s,group=g) for g in range(d.count)},
+            # Start all devices at group 1,
+            # Move 20 devices up a group every 3 rounds
+            "timeline": lambda d,size: reduce((lambda o, s: o.update({10*s: {s: 2, 0: (10 if s == 0 else 8)}}) or o), range(d.count), {}),
+        },
         # {
         #     # Start with all devices having cluster 1
         #     # After 3 rounds, let 20 devices discover another cluster
@@ -133,23 +171,6 @@ layers = {
         #     # Move 20 devices up a group every 3 rounds
         #     "timeline": lambda d,size: reduce((lambda o, s: o.update({3*s: {s: 1, 0: (10 if s == 0 else 9)}}) or o), range(d.count), {}),
         # },
-        {
-            # Start with all devices having cluster 1
-            # After 3 rounds, let 20 devices discover another cluster
-            # After another 3, let the same 20 discover another
-            "name": "Subset Discover Long",
-            "datasets": DataSetCollection.data_sets_names,
-            "rounds": lambda d,size: 5* d.count,
-            "devices": 15,
-            "pct_data_per_device": 0.05,
-            "transition": [True, False],
-            # Create groups with names counting up from 0 to count
-            # group n has datapoints from cluster n and is concated with group n-1
-            "groups": lambda d,s: {g: partial(d.rand_g_c, size=s,group=g) for g in range(d.count)},
-            # Start all devices at group 1,
-            # Move 20 devices up a group every 3 rounds
-            "timeline": lambda d,size: reduce((lambda o, s: o.update({5*s: {s: 2, 0: (10 if s == 0 else 8)}}) or o), range(d.count), {}),
-        },
         # {
         #     # Start with all devices having cluster 1
         #     # After 3 rounds, let 20 devices discover another cluster
@@ -169,6 +190,18 @@ layers = {
         # },
     ],
     "algs": [
+        {
+            "name": "KMeans Distributed Centralized",
+            "device_multi": 10,
+            "server": {"class": KMeans_Server_Keep, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
+            "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
+        },
+        {
+            "name": "KMeans Distributed Decentralized (Gossip)",
+            "device_multi": 10,
+            "server": {"class": KMeans_Server_Keep, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
+            "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
+        },
         # {
         #     "name": "SOM (Fed)",
         #     "server": {"class": SOM_server, "kwargs": dict(params=layer_map["som_params"])}, 
@@ -176,8 +209,8 @@ layers = {
         # },
         {
             "name": "KMeans Server",
-            "server": {"class": KMeans_Server, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
-            "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
+            "server": {"class": KMeans_Server, "kwargs": dict(cure_params=layer_map["gossip_server_params"])},
+            "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["gossip_device_params"])},
         },
         # {
         #     "name": "KMeans Server Carry",
@@ -188,6 +221,6 @@ layers = {
             "name": "KMeans Server Keep",
             "server": {"class": KMeans_Server_Keep, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
             "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
-        }
+        },
     ]
 }

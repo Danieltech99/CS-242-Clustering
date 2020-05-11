@@ -42,6 +42,12 @@ class Device:
         self.alg = alg_device_class(np.array(indicies), id_num=id_num)
         self.indicies = np.array(indicies)
     
+    def set_id(self, id_num):
+        # if alg has update_id method, call it
+        update_id = getattr(self.alg, "update_id", None)
+        if callable(update_id):
+            update_id(id_num)
+    
     def run(self):
         self.alg.run_on_device()
 
@@ -84,6 +90,7 @@ class Server:
     def run_devices(self, devices, round_num = 0):
         reports = []
         for device_num,device in enumerate(devices):
+            device.set_id(device_num)
             device.run()
             report = device.report_back_to_server()
             reports.append(report)
@@ -102,5 +109,6 @@ class Server:
         return self.alg.get_reports_for_devices()
 
     def send_updates_to_device(self, devices, update_for_devices): # report
-        for device in devices:
-            device.update(update_for_devices)
+        for group in self.device_groups:
+            for device in group:
+                device.update(update_for_devices)

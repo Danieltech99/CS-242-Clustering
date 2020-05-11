@@ -115,8 +115,7 @@ class DeviceSuite:
         counter = 0
 
         for group, f in self.suite["groups"].items():
-            self.groups[group] = [Device(self.test["device"], f()["sample"](), id_num=(
-                counter*100000+i)) for i in range(self.suite["devices"])]
+            self.groups[group] = [Device(self.test["device"], f()["sample"](), id_num=(i)) for i in range(self.suite["devices"])]
 
         self.server = Server(self.test["server"], self.groups)
 
@@ -124,6 +123,11 @@ class DeviceSuite:
         max_devices = 0
         for x in self.suite["timeline"].values():
             max_devices = max(sum(x.values()),max_devices)
+
+        if "device_multi" in self.test:
+            for t,groups in self.suite["timeline"].items():
+                for group, num_devices in groups.items():
+                    self.suite["timeline"][t][group] = num_devices * self.test["device_multi"]
         self.server.define_plotter(rounds = rounds, devices=max_devices)
 
     def run_rounds(self):
@@ -196,13 +200,13 @@ def evaluate_accuracy_evolution():
     results = {}
     for i, part in enumerate(partitions):
         res = analysis.calculate_time(m.constructAndRun)(part, tests)
-        # results.update(res)
+        results.update(res)
         print("Progress: {} of {} Complete".format(i+1, sets))
 
-    # analysis.save_test_results(results)
+    analysis.save_test_results(results)
 
-    # if ENABLE_ROUND_PROGRESS_PLOT:
-    #     analysis.plot_rounds(results)
+    if ENABLE_ROUND_PROGRESS_PLOT:
+        analysis.plot_rounds(results)
 
 
 if __name__ == "__main__":
