@@ -8,8 +8,8 @@ class DataSetCollection:
     labeled_data = None
     noice_levels = [
         # "vhigh", 
-        "high", 
-        # "med", 
+        # "high", 
+        "med", 
         # "low", 
         # "vlow"
         ]

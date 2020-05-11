@@ -60,7 +60,7 @@ class MultiProcessing:
         with progress_lock:
             number_of_tests_finished.value += 1
             o = self.convert(res)
-        with open('results-subset-rerun-inter2.json', 'w') as outfile:
+        with open('results-subset-rerun-less-noice-inter2.json', 'w') as outfile:
             json.dump(o, outfile)
             
         print('\tProgress: {}/{} Complete \t {} \t {}'.format(number_of_tests_finished.value, number_of_tests, result_dict["end"].value, name))
@@ -284,9 +284,9 @@ def evaluate_accuracy_evolution():
         print("Progress: {} of {} Complete".format(i+1, sets))
 
     o = m.convert(results)
-    with open('results-subset-rerun-new.json', 'w') as outfile:
+    with open('results-subset-rerun-less-noice-new.json', 'w') as outfile:
         json.dump(o, outfile)
-    with open('results-subset-rerun-updated.json', 'w') as outfile:
+    with open('results-subset-rerun-less-noice-updated.json', 'w') as outfile:
         if current is None: current = {}
         json.dump(u(current,o), outfile)
 
@@ -316,17 +316,17 @@ def run_non_fed_and_save():
 
 
 if __name__ == "__main__":
-    # analysis.calculate_time(evaluate_accuracy_evolution)()
+    analysis.calculate_time(evaluate_accuracy_evolution)()
 
-    with open('results-updated.json') as f:
-        current = json.load(f)
+    # with open('results-updated.json') as f:
+    #     current = json.load(f)
     
-    # with open('_json_pieces/results-gossip.json') as f:
-    with open('results-subset-rerun-new.json') as f:
-        o = json.load(f)
+    # # with open('_json_pieces/results-gossip.json') as f:
+    # with open('results-subset-rerun-less-noice-new.json') as f:
+    #     o = json.load(f)
 
-    with open('results-updated.json', 'w') as outfile:
-        json.dump(u(current, o), outfile)
+    # with open('results-updated.json', 'w') as outfile:
+    #     json.dump(u(current, o), outfile)
     
     # with open('results-onlineness-2-new.json') as f:
     #     o2 = json.load(f)

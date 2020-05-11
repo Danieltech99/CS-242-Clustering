@@ -21,7 +21,7 @@ layer_map = dict(
         }
     },
     k_means_device_params = {
-        " ": {"N_CLUSTERS": 10, # device mid clusters
+        " ": {"N_CLUSTERS": 20, # device mid clusters
             "MAX_ITERS": 100,
             "N_INITS": 5,
             "METRIC": "euclidean",
@@ -194,7 +194,7 @@ layers = {
             "groups": lambda d,s: {g: partial(d.rand_g_c, size=s,group=g) for g in range(d.t_count)},
             # Start all devices at group 1,
             # Move 20 devices up a group every 3 rounds
-            "timeline": lambda d,size: reduce((lambda o, s: o.update({3*s: {s: 4, 0: (12 if s == 0 else 8)}}) or o), range(d.t_count), {}),
+            "timeline": lambda d,size: reduce((lambda o, s: o.update({3*s: {s: 6, 0: (12 if s == 0 else 6)}}) or o), range(d.t_count), {}),
         },
         {
             # Start with all devices having cluster 1
@@ -213,7 +213,7 @@ layers = {
             "groups": lambda d,s: {g: partial(d.rand_g_c, size=s,group=g) for g in range(d.t_count)},
             # Start all devices at group 1,
             # Move 20 devices up a group every 3 rounds
-            "timeline": lambda d,size: reduce((lambda o, s: o.update({6*s: {s: 4, 0: (12 if s == 0 else 8)}}) or o), range(d.t_count), {}),
+            "timeline": lambda d,size: reduce((lambda o, s: o.update({6*s: {s: 6, 0: (12 if s == 0 else 6)}}) or o), range(d.t_count), {}),
         },
         # {
         #     # Start with all devices having cluster 1
