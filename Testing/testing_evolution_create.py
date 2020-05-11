@@ -49,8 +49,8 @@ def create_suites(layers):
         for data_set_name in s["datasets"]:
             levels = layers["noice"](data_set_name)
             for level in levels:
-                (data,labels) = collection.get_set(data_set_name, level)
-                dataset = DataSet(data, labels)    
+                (data,labels,true_labels) = collection.get_set_true(data_set_name, level)
+                dataset = DataSet(data, labels,true_labels)    
                 pop_size = dataset.get_indices().size
                 for transition in s["transition"]:
                     suite = apply_down(dict(s), dataset, round(s["pct_data_per_device"] * pop_size))

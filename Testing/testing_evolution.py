@@ -171,7 +171,7 @@ class DeviceSuite:
     last_pred = None
     def accuracy(self):
         data = self.suite["dataset"].data
-        labels = self.suite["dataset"].labeled_data
+        labels = self.suite["dataset"].true_labels
         pred_labels = self.server.classify(data)
         self.last_pred = pred_labels
         return metrics.adjusted_rand_score(labels, pred_labels)
@@ -185,7 +185,7 @@ def evaluate_accuracy_evolution():
     tests = create_tests(layers)
 
     l = len(suites) * len(tests)
-    max_proc = 8
+    max_proc = 2
     split_n = math.floor(l/(l/max_proc))
     split_n = math.ceil(split_n / len(tests))
     partitions = [suites[i:i + split_n] for i in range(0, len(suites), split_n)]
@@ -196,13 +196,13 @@ def evaluate_accuracy_evolution():
     results = {}
     for i, part in enumerate(partitions):
         res = analysis.calculate_time(m.constructAndRun)(part, tests)
-        results.update(res)
+        # results.update(res)
         print("Progress: {} of {} Complete".format(i+1, sets))
 
-    analysis.save_test_results(results)
+    # analysis.save_test_results(results)
 
-    if ENABLE_ROUND_PROGRESS_PLOT:
-        analysis.plot_rounds(results)
+    # if ENABLE_ROUND_PROGRESS_PLOT:
+    #     analysis.plot_rounds(results)
 
 
 if __name__ == "__main__":
