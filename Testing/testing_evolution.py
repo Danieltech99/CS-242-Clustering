@@ -21,9 +21,10 @@ np.random.rand(242)
 NON_FED_KEY = "Traditional K-Means"
 
 ENABLE_ROUND_PROGRESS_PLOT = True
-MULTIPROCESSED = True
 PLOT = False
 RUN_NON_FED = True
+MULTIPROCESSED = True
+MAX_PROC = 40
 
 
 class MultiProcessing:
@@ -58,10 +59,12 @@ class MultiProcessing:
 
         with progress_lock:
             number_of_tests_finished.value += 1
-        #     o = self.convert(res)
-        # with open('results.json', 'w') as outfile:
-        #     json.dump(o, outfile)
+            o = self.convert(res)
+        with open('results-inter2.json', 'w') as outfile:
+            json.dump(o, outfile)
             
+        print('\tProgress: {}/{} Complete \t {} \t {}'.format(number_of_tests_finished.value, number_of_tests, result_dict["end"].value, name))
+        print('\tProgress: {}/{} Complete \t {} \t {}'.format(number_of_tests_finished.value, number_of_tests, result_dict["end"].value, name))
         print('\tProgress: {}/{} Complete \t {} \t {}'.format(number_of_tests_finished.value, number_of_tests, result_dict["end"].value, name))
 
     def run(self, construction, **kwargs):
@@ -188,13 +191,14 @@ class DeviceSuite:
             self.server.define_plotter(rounds = rounds, devices=max_devices)
 
     def run_rounds(self):
-        for _round, groups in self.suite["timeline"].items():
+        for _round, groups in sorted(self.suite["timeline"].items()):
             self.server.run_round(groups)
+            print("\t\tCompleted round {}/{}".format(_round+1, len(self.suite["timeline"])))
 
     def get_population_of_round(self, target_round):
         indicies = None
         group_set = set()
-        for _round, groups in self.suite["timeline"].items():
+        for _round, groups in sorted(self.suite["timeline"].items()):
             if _round <= target_round:
                 for g,val in groups.items():
                     if val > 0 and g not in group_set:
@@ -219,10 +223,11 @@ class DeviceSuite:
     def run_rounds_with_accuracy(self, return_rounds = True):
         # data = self.suite["dataset"].data
         round_accs = []
-        for _round, groups in self.suite["timeline"].items():
+        for _round, groups in sorted(self.suite["timeline"].items()):
             self.server.run_round(groups, int(_round))
             if return_rounds:
                 round_accs.append(self.plot_round(_round))
+            print("\t\tCompleted round {}/{}".format(_round+1, len(self.suite["timeline"])))
         return round_accs
     
     def complete(self):
@@ -255,7 +260,7 @@ def evaluate_accuracy_evolution():
     tests = analysis.calculate_time(create_tests)(layers)
 
     l = len(suites) * len(tests)
-    max_proc = 40
+    max_proc = MAX_PROC
     split_n = math.floor(l/(l/max_proc))
     split_n = math.ceil(split_n / len(tests))
     partitions = [suites[i:i + split_n] for i in range(0, len(suites), split_n)]
@@ -263,7 +268,7 @@ def evaluate_accuracy_evolution():
     print("Running {} Sets of Tests".format(sets))
 
     current = None
-    with open('results.json') as f:
+    with open('results-inter.json') as f:
         current = json.load(f)
 
     m = MultiProcessing(MULTIPROCESSED)
@@ -272,6 +277,12 @@ def evaluate_accuracy_evolution():
         res = analysis.calculate_time(m.constructAndRun)(part, tests, current = current)
         results.update(res)
         print("Progress: {} of {} Complete".format(i+1, sets))
+
+    o = m.convert(results)
+    with open('results-new.json', 'w') as outfile:
+        json.dump(o, outfile)
+    with open('results-updated.json', 'w') as outfile:
+        json.dump(u(current,o), outfile)
 
     # analysis.save_test_results(results)
 

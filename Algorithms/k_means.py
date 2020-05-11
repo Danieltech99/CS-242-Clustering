@@ -237,11 +237,11 @@ class KMeans_Server(CURE_Server):
         silhouette_scores = []
         models = {}
         for k in range(2, max_k+1):
-            # print("running k =", k)
             k_fit = KMeans(n_clusters=k).fit(data)
             models[k] = k_fit
             labels = k_fit.labels_
             silhouette_scores.append(silhouette_score(data, labels))
+            print("\t\t\tfinished running k =", k)
 
         best_k = np.argmax(silhouette_scores) + 2
         return best_k, models[best_k]
