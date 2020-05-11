@@ -34,19 +34,23 @@ layer_map = dict(
             "COMPRESSION": 0.05},
     },
     gossip_device_params = {
-        "N_DEVICES": 20,
-        "N_CLUSTERS": 6,
-        "N_INITS": 10,
-        "CACHE_SIZE": 4,
-        "GLOBAL_INIT": False,
-        "METRIC": "euclidean",
-        "MAX_ITERS": 100,
-        "TOLERANCE": None
+        " ": {
+            "N_DEVICES": 100,
+            "N_CLUSTERS": 6,
+            "N_INITS": 10,
+            "CACHE_SIZE": 4,
+            "GLOBAL_INIT": None,
+            "METRIC": "euclidean",
+            "MAX_ITERS": 100,
+            "TOLERANCE": None
+        }
     },
     gossip_server_params = {
-        "N_DEVICES": 20,
-        "N_CLUSTERS": 6,
-        "N_AGGREGATE_ROUNDS": 3
+        " ": {
+            "N_DEVICES": 100,
+            "N_CLUSTERS": 6,
+            "N_AGGREGATE_ROUNDS": 3
+        }
     }
 )
 
@@ -60,6 +64,7 @@ from functools import reduce
 collection = DataSetCollection()
 from Algorithms.k_means import CURE_Server,K_Means_Device,CURE_Server_Carry,CURE_Server_Keep, KMeans_Server, KMeans_Server_Carry, KMeans_Server_Keep
 from Algorithms.som import SOM_Device, SOM_server
+from Algorithms.gossip_k_means import gossip_KMeans_server,gossip_KMeans_Device
 layers = {
     "noice": (lambda dataset: collection.noice_levels[:-1] if dataset == "circles-grouped" else collection.noice_levels),
     "suites": [
@@ -190,37 +195,37 @@ layers = {
         # },
     ],
     "algs": [
-        {
-            "name": "KMeans Distributed Centralized",
-            "device_multi": 10,
-            "server": {"class": KMeans_Server_Keep, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
-            "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
-        },
-        {
-            "name": "KMeans Distributed Decentralized (Gossip)",
-            "device_multi": 10,
-            "server": {"class": KMeans_Server_Keep, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
-            "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
-        },
         # {
-        #     "name": "SOM (Fed)",
-        #     "server": {"class": SOM_server, "kwargs": dict(params=layer_map["som_params"])}, 
-        #     "device": {"class": SOM_Device, "kwargs": dict(params=layer_map["som_params"])},
-        # },
-        {
-            "name": "KMeans Server",
-            "server": {"class": KMeans_Server, "kwargs": dict(cure_params=layer_map["gossip_server_params"])},
-            "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["gossip_device_params"])},
-        },
-        # {
-        #     "name": "KMeans Server Carry",
-        #     "server": {"class": KMeans_Server_Carry, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
+        #     "name": "KMeans Distributed Centralized",
+        #     "device_multi": 10,
+        #     "server": {"class": KMeans_Server_Keep, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
         #     "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
         # },
         {
-            "name": "KMeans Server Keep",
-            "server": {"class": KMeans_Server_Keep, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
-            "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
+            "name": "KMeans Distributed Decentralized (Gossip)",
+            "device_multi": 10,
+            "server": {"class": gossip_KMeans_server, "kwargs": dict(params=layer_map["gossip_server_params"])},
+            "device": {"class": gossip_KMeans_Device, "kwargs": dict(params=layer_map["gossip_device_params"])},
         },
+        # # {
+        # #     "name": "SOM (Fed)",
+        # #     "server": {"class": SOM_server, "kwargs": dict(params=layer_map["som_params"])}, 
+        # #     "device": {"class": SOM_Device, "kwargs": dict(params=layer_map["som_params"])},
+        # # },
+        # {
+        #     "name": "KMeans Server",
+        #     "server": {"class": KMeans_Server, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
+        #     "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
+        # },
+        # # {
+        # #     "name": "KMeans Server Carry",
+        # #     "server": {"class": KMeans_Server_Carry, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
+        # #     "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
+        # # },
+        # {
+        #     "name": "KMeans Server Keep",
+        #     "server": {"class": KMeans_Server_Keep, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
+        #     "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
+        # },
     ]
 }

@@ -44,9 +44,9 @@ class Device:
     
     def set_id(self, id_num):
         # if alg has update_id method, call it
-        update_id = getattr(self.alg, "update_id", None)
-        if callable(update_id):
-            update_id(id_num)
+        set_id_number = getattr(self.alg, "set_id_number", None)
+        if callable(set_id_number):
+            set_id_number(id_num)
     
     def run(self):
         self.alg.run_on_device()
@@ -89,6 +89,7 @@ class Server:
 
     def run_devices(self, devices, round_num = 0):
         reports = []
+        print("length of devices", len(devices))
         for device_num,device in enumerate(devices):
             device.set_id(device_num)
             device.run()
@@ -109,6 +110,6 @@ class Server:
         return self.alg.get_reports_for_devices()
 
     def send_updates_to_device(self, devices, update_for_devices): # report
-        for group in self.device_groups:
-            for device in group:
+        for group_name, devices in self.device_groups.items():
+            for device in devices:
                 device.update(update_for_devices)

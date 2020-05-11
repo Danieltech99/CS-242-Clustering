@@ -83,9 +83,9 @@ class gossip_KMeans_Device:
         if latest_update is None:
             # instantiate cache
             if id_num == 0:
-                self.cache = [1, self._n_devices]
+                self.cache = [1, self._n_devices - 1]
             elif id_num == self._n_devices - 1:
-                self.cache = [0, self._n_devices]
+                self.cache = [0, self._n_devices - 2]
             else:
                 self.cache = [self._id_num - 1, self._id_num + 1]
             self.cache = set(self.cache)
@@ -147,7 +147,6 @@ class gossip_KMeans_Device:
         if metric == None:
             metric = "euclidean"
 
-        # print("centers", centers)
         labels, distances = pairwise_distances_argmin_min(data, centers, metric)
         inertia = np.sum(distances**2)
 
@@ -175,7 +174,7 @@ class gossip_KMeans_Device:
         updates_for_server = {
                               "device_id": self._id_num,
                               "cache": self.cache,
-                              "cache_size": self.cache_size,
+                              "cache_size": self._cache_size,
                               "local_centers": self.local_centers,
                               "local_counts": self.local_counts
                               }
@@ -205,13 +204,15 @@ class gossip_KMeans_server:
 
         self.updates_for_devices = {i:{} for i in range(self._n_devices)}
 
+    def run_on_server(self):
+        pass
 
     def update_server(self, reports_from_devices):
         all_reports = {report["device_id"]:report for report in reports_from_devices}
         if reports_from_devices[1]["local_centers"] is None:
-            first_round_sync(all_reports)
+            self.first_round_sync(all_reports)
         else:
-            gossip_sync(all_reports)
+            self.gossip_sync(all_reports)
 
     def first_round_sync(self, all_reports):
         master_centers = all_reports[0]["local_centers"]
@@ -222,7 +223,7 @@ class gossip_KMeans_server:
                 "cache": all_reports[device_id]["cache"],
                 "centers": master_centers
             }
-            updates_for_device[device_id] = update
+            updates_for_devices[device_id] = update
 
         self.updates_for_devices = updates_for_devices
                 
@@ -238,8 +239,9 @@ class gossip_KMeans_server:
         # Calculate new cluster center from neighbors
         for agg_round in range(self._n_aggregate_rounds):
             for device_id in range(self._n_devices):
+                print("HELLO", device_id) 
                 device_cache = tmp_caches[device_id]
-                target_id = random.choice(device_cache)
+                target_id = random.sample(device_cache,1)[0]
                 
                 # update sums and weights
                 tmp_center_sums[device_id] = tmp_center_sums[device_id] + \
@@ -264,7 +266,7 @@ class gossip_KMeans_server:
         for device_id in range(self._n_devices):
             update = {
                         "cache": tmp_caches[device_id],
-                        "centers": tmp_center_sums[device_id] / tmp_weights[device_id][:, None]
+                        "centers": tmp_center_sums[device_id] / max(0.00000001,tmp_weights[device_id][:, None])
                      }      
             updates_for_devices[device_id] = update
 

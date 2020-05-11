@@ -18,6 +18,7 @@ np.random.rand(242)
 
 ENABLE_ROUND_PROGRESS_PLOT = True
 MULTIPROCESSED = True
+PLOT = False
 
 
 class MultiProcessing:
@@ -123,12 +124,14 @@ class DeviceSuite:
         max_devices = 0
         for x in self.suite["timeline"].values():
             max_devices = max(sum(x.values()),max_devices)
-
+    
         if "device_multi" in self.test:
             for t,groups in self.suite["timeline"].items():
                 for group, num_devices in groups.items():
                     self.suite["timeline"][t][group] = num_devices * self.test["device_multi"]
-        self.server.define_plotter(rounds = rounds, devices=max_devices)
+        
+        if PLOT:
+            self.server.define_plotter(rounds = rounds, devices=max_devices)
 
     def run_rounds(self):
         for _round, groups in self.suite["timeline"].items():
