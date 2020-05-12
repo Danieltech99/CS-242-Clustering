@@ -196,25 +196,25 @@ layers = {
             # Move 20 devices up a group every 3 rounds
             "timeline": lambda d,size: reduce((lambda o, s: o.update({3*s: {s: 6, 0: (12 if s == 0 else 6)}}) or o), range(d.t_count), {}),
         },
-        {
-            # Start with all devices having cluster 1
-            # After 3 rounds, let 20 devices discover another cluster
-            # After another 3, let the same 20 discover another
-            "name": "Subset Discover Long",
-            "non_fed": False,
-            "datasets": DataSetCollection.data_sets_names,
-            "rounds": lambda d,size: 6* d.t_count,
-            "devices": 120,
-            "devices_per_round": 12,
-            "pct_data_per_device": 0.01,
-            "transition": [True],
-            # Create groups with names counting up from 0 to count
-            # group n has datapoints from cluster n and is concated with group n-1
-            "groups": lambda d,s: {g: partial(d.rand_g_c, size=s,group=g) for g in range(d.t_count)},
-            # Start all devices at group 1,
-            # Move 20 devices up a group every 3 rounds
-            "timeline": lambda d,size: reduce((lambda o, s: o.update({6*s: {s: 6, 0: (12 if s == 0 else 6)}}) or o), range(d.t_count), {}),
-        },
+        # #{
+        # #    # Start with all devices having cluster 1
+        # #    # After 3 rounds, let 20 devices discover another cluster
+        # #    # After another 3, let the same 20 discover another
+        # #    "name": "Subset Discover Long",
+        # #    "non_fed": False,
+        # #    "datasets": DataSetCollection.data_sets_names,
+        # #    "rounds": lambda d,size: 6* d.t_count,
+        # #    "devices": 120,
+        # #    "devices_per_round": 12,
+        # #    "pct_data_per_device": 0.01,
+        # #    "transition": [True],
+        # #    # Create groups with names counting up from 0 to count
+        # #    # group n has datapoints from cluster n and is concated with group n-1
+        # #    "groups": lambda d,s: {g: partial(d.rand_g_c, size=s,group=g) for g in range(d.t_count)},
+        # #    # Start all devices at group 1,
+        # #    # Move 20 devices up a group every 3 rounds
+        # #    "timeline": lambda d,size: reduce((lambda o, s: o.update({6*s: {s: 6, 0: (12 if s == 0 else 6)}}) or o), range(d.t_count), {}),
+        # #},
         # {
         #     # Start with all devices having cluster 1
         #     # After 3 rounds, let 20 devices discover another cluster
