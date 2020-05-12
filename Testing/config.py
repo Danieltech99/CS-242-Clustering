@@ -134,20 +134,20 @@ layers = {
         #     # All rounds (round 0), sample evenly from all groups
         #     "timeline": lambda d,size: {0: reduce((lambda o, s: o.update({s: round(12/d.t_count)}) or o), range(d.t_count), {})},
         # },
-        # {
-        #     "name": "Cross-Device Detection",
-        #     "non_fed": True,
-        #     "datasets": DataSetCollection.data_sets_names,
-        #     "rounds": 5,
-        #     "devices": 120,
-        #     "devices_per_round": 12,
-        #     "pct_data_per_device": 0.01,
-        #     "transition": [False],
-        #     # One group per cluster
-        #     "groups": lambda d,s: {g: partial(d.rand_g_cross, size=s,group=g) for g in range(d.count)},
-        #     # All rounds (round 0), sample evenly from all groups
-        #     "timeline": lambda d,size: {0: reduce((lambda o, s: o.update({s: round(12/d.count)}) or o), range(d.count), {})},
-        # },
+        {
+            "name": "Cross-Device Detection",
+            "non_fed": True,
+            "datasets": DataSetCollection.data_sets_names,
+            "rounds": 5,
+            "devices": 120,
+            "devices_per_round": 12,
+            "pct_data_per_device": 0.01,
+            "transition": [False],
+            # One group per cluster
+            "groups": lambda d,s: {g: partial(d.rand_g_cross, size=s,group=g) for g in range(d.count)},
+            # All rounds (round 0), sample evenly from all groups
+            "timeline": lambda d,size: {0: reduce((lambda o, s: o.update({s: round(12/d.count)}) or o), range(d.count), {})},
+        },
         # {
         #     "name": "Crowd Discover",
         #     "non_fed": False,
@@ -177,25 +177,25 @@ layers = {
         #     # At each 3n rounds, switch to group n
         #     "timeline": lambda d,size: reduce((lambda o, s: o.update({3*s: {s: 12}}) or o), range(d.t_count), {}),
         # },
-        {
-            # Start with all devices having cluster 1
-            # After 3 rounds, let 20 devices discover another cluster
-            # After another 3, let the same 20 discover another
-            "name": "Subset Discover",
-            "non_fed": False,
-            "datasets": DataSetCollection.data_sets_names,
-            "rounds": lambda d,size: 6 * d.t_count,
-            "devices": 120,
-            "devices_per_round": 12,
-            "pct_data_per_device": 0.01,
-            "transition": [True],
-            # Create groups with names counting up from 0 to count
-            # group n has datapoints from cluster n and is concated with group n-1
-            "groups": lambda d,s: {g: partial(d.rand_g_c, size=s,group=g) for g in range(d.t_count)},
-            # Start all devices at group 1,
-            # Move 20 devices up a group every 3 rounds
-            "timeline": lambda d,size: reduce((lambda o, s: o.update({3*s: {s: 6, 0: (12 if s == 0 else 6)}}) or o), range(d.t_count), {}),
-        },
+        # {
+        #     # Start with all devices having cluster 1
+        #     # After 3 rounds, let 20 devices discover another cluster
+        #     # After another 3, let the same 20 discover another
+        #     "name": "Subset Discover",
+        #     "non_fed": False,
+        #     "datasets": DataSetCollection.data_sets_names,
+        #     "rounds": lambda d,size: 6 * d.t_count,
+        #     "devices": 120,
+        #     "devices_per_round": 12,
+        #     "pct_data_per_device": 0.01,
+        #     "transition": [True],
+        #     # Create groups with names counting up from 0 to count
+        #     # group n has datapoints from cluster n and is concated with group n-1
+        #     "groups": lambda d,s: {g: partial(d.rand_g_c, size=s,group=g) for g in range(d.t_count)},
+        #     # Start all devices at group 1,
+        #     # Move 20 devices up a group every 3 rounds
+        #     "timeline": lambda d,size: reduce((lambda o, s: o.update({3*s: {s: 6, 0: (12 if s == 0 else 6)}}) or o), range(d.t_count), {}),
+        # },
         # #{
         # #    # Start with all devices having cluster 1
         # #    # After 3 rounds, let 20 devices discover another cluster
@@ -259,31 +259,31 @@ layers = {
             "server": {"class": gossip_KMeans_server, "kwargs": dict(params=layer_map["gossip_server_params"])},
             "device": {"class": gossip_KMeans_Device, "kwargs": dict(params=layer_map["gossip_device_params"])},
         },
-        {
-            "name": "KMeans Distributed Centralized",
-            "device_multi": 10,
-            "server": {"class": KMeans_Server_Central, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
-            "device": {"class": KMeans_Device_Central, "kwargs": dict(params=layer_map["k_means_device_params"])},
-        },
         # {
-        #     "name": "SOM (Fed)",
-        #     "server": {"class": SOM_server, "kwargs": dict(params=layer_map["som_params"])}, 
-        #     "device": {"class": SOM_Device, "kwargs": dict(params=layer_map["som_params"])},
+        #     "name": "KMeans Distributed Centralized",
+        #     "device_multi": 10,
+        #     "server": {"class": KMeans_Server_Central, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
+        #     "device": {"class": KMeans_Device_Central, "kwargs": dict(params=layer_map["k_means_device_params"])},
         # },
-        {
-            "name": "KMeans Server",
-            "server": {"class": KMeans_Server, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
-            "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
-        },
+        # # {
+        # #     "name": "SOM (Fed)",
+        # #     "server": {"class": SOM_server, "kwargs": dict(params=layer_map["som_params"])}, 
+        # #     "device": {"class": SOM_Device, "kwargs": dict(params=layer_map["som_params"])},
+        # # },
         # {
-        #     "name": "KMeans Server Carry",
-        #     "server": {"class": KMeans_Server_Carry, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
+        #     "name": "KMeans Server",
+        #     "server": {"class": KMeans_Server, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
         #     "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
         # },
-        {
-            "name": "KMeans Server Keep",
-            "server": {"class": KMeans_Server_Keep, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
-            "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
-        },
+        # # {
+        # #     "name": "KMeans Server Carry",
+        # #     "server": {"class": KMeans_Server_Carry, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
+        # #     "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
+        # # },
+        # {
+        #     "name": "KMeans Server Keep",
+        #     "server": {"class": KMeans_Server_Keep, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
+        #     "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
+        # },
     ]
 }
