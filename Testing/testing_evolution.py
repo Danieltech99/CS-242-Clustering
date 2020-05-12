@@ -60,7 +60,7 @@ class MultiProcessing:
         with progress_lock:
             number_of_tests_finished.value += 1
             o = self.convert(res)
-        with open('results-gossip-specialized-inter2.json', 'w') as outfile:
+        with open('results-inter2.json', 'w') as outfile:
             json.dump(o, outfile)
             
         print('\tProgress: {}/{} Complete \t {} \t {}'.format(number_of_tests_finished.value, number_of_tests, result_dict["end"].value, name))
@@ -284,16 +284,16 @@ def evaluate_accuracy_evolution():
         print("Progress: {} of {} Complete".format(i+1, sets))
 
     o = m.convert(results)
-    with open('results-gossip-specialized-new.json', 'w') as outfile:
+    with open('results-new.json', 'w') as outfile:
         json.dump(o, outfile)
-    with open('results-gossip-specialized-updated.json', 'w') as outfile:
+    with open('results-updated.json', 'w') as outfile:
         if current is None: current = {}
         json.dump(u(current,o), outfile)
 
-    # analysis.save_test_results(results)
+    analysis.save_test_results(results)
 
-    # if ENABLE_ROUND_PROGRESS_PLOT:
-    #     analysis.calculate_time(analysis.plot_rounds)(results)
+    if ENABLE_ROUND_PROGRESS_PLOT:
+        analysis.calculate_time(analysis.plot_rounds)(results)
 
 
 def run_non_fed_and_save():
@@ -301,8 +301,8 @@ def run_non_fed_and_save():
     tests = analysis.calculate_time(create_tests)(layers)
 
     current = None
-    with open('results.json') as f:
-        current = json.load(f)
+    # with open('results.json') as f:
+    #     current = json.load(f)
 
     m = MultiProcessing(MULTIPROCESSED)
     results = {}
@@ -322,7 +322,7 @@ if __name__ == "__main__":
     #     current = json.load(f)
     
     # # with open('_json_pieces/results-gossip.json') as f:
-    # with open('results-gossip-specialized-new.json') as f:
+    # with open('results-new.json') as f:
     #     o = json.load(f)
 
     # with open('results-updated.json', 'w') as outfile:

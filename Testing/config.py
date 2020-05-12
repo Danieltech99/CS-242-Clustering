@@ -68,72 +68,72 @@ from Algorithms.gossip_k_means import gossip_KMeans_server,gossip_KMeans_Device
 layers = {
     "noice": (lambda dataset: collection.noice_levels[:-1] if dataset == "circles-grouped" else collection.noice_levels),
     "suites": [
-        # {
-        #     "name": "Static and Uniform",
-        #     "non_fed": True,
-        #     "datasets": DataSetCollection.data_sets_names,
-        #     "rounds": 5,
-        #     "devices": 120, # number of devices per group
-        #     "devices_per_round": 12,
-        #     "pct_data_per_device": 0.01,
-        #     "transition": [False],
-        #     "groups": lambda dsclass,size: {"uniform": partial(dsclass.rand, size=size)},
-        #     "timeline": {
-        #         0: {
-        #             "uniform": 12 # number of devices per round
-        #         },
-        #     }
-        # },
-        # {
-        #     "name": "25% IID",
-        #     "non_fed": True,
-        #     "datasets": DataSetCollection.data_sets_names,
-        #     "rounds": 5,
-        #     "devices": 120, # number of devices per group
-        #     "devices_per_round": 12,
-        #     "pct_data_per_device": 0.01,
-        #     "transition": [False],
-        #     "groups": lambda d,s: {g: partial(d.rand_iid, size=s,group=g,perc=0.25) for g in range(d.t_count)},
-        #     "timeline": lambda d,size: {0: reduce((lambda o, s: o.update({s: round(12/d.t_count)}) or o), range(d.t_count), {})},
-        # },
-        # {
-        #     "name": "50% IID",
-        #     "non_fed": True,
-        #     "datasets": DataSetCollection.data_sets_names,
-        #     "rounds": 5,
-        #     "devices": 120, # number of devices per group
-        #     "devices_per_round": 12,
-        #     "pct_data_per_device": 0.01,
-        #     "transition": [False],
-        #     "groups": lambda d,s: {g: partial(d.rand_iid, size=s,group=g,perc=0.5) for g in range(d.t_count)},
-        #     "timeline": lambda d,size: {0: reduce((lambda o, s: o.update({s: round(12/d.t_count)}) or o), range(d.t_count), {})},
-        # },
-        # {
-        #     "name": "75% IID",
-        #     "non_fed": True,
-        #     "datasets": DataSetCollection.data_sets_names,
-        #     "rounds": 5,
-        #     "devices": 120, # number of devices per group
-        #     "devices_per_round": 12,
-        #     "pct_data_per_device": 0.01,
-        #     "transition": [False],
-        #     "groups": lambda d,s: {g: partial(d.rand_iid, size=s,group=g,perc=0.75) for g in range(d.t_count)},
-        #     "timeline": lambda d,size: {0: reduce((lambda o, s: o.update({s: round(12/d.t_count)}) or o), range(d.t_count), {})},
-        # },
-        # {
-        #     "name": "100% IID",
-        #     "non_fed": True,
-        #     "datasets": DataSetCollection.data_sets_names,
-        #     "rounds": 5,
-        #     "devices": 120,
-        #     "devices_per_round": 12,
-        #     "pct_data_per_device": 0.01,
-        #     "transition": [False],
-        #     # One group per cluster
-        #     "groups": lambda d,s: {g: partial(d.rand_g, size=s,group=g) for g in range(d.t_count)},
-        #     # All rounds (round 0), sample evenly from all groups
-        #     "timeline": lambda d,size: {0: reduce((lambda o, s: o.update({s: round(12/d.t_count)}) or o), range(d.t_count), {})},
-        # },
+        {
+            "name": "Static and Uniform",
+            "non_fed": True,
+            "datasets": DataSetCollection.data_sets_names,
+            "rounds": 5,
+            "devices": 120, # number of devices per group
+            "devices_per_round": 12,
+            "pct_data_per_device": 0.01,
+            "transition": [False],
+            "groups": lambda dsclass,size: {"uniform": partial(dsclass.rand, size=size)},
+            "timeline": {
+                0: {
+                    "uniform": 12 # number of devices per round
+                },
+            }
+        },
+        {
+            "name": "25% IID",
+            "non_fed": True,
+            "datasets": DataSetCollection.data_sets_names,
+            "rounds": 5,
+            "devices": 120, # number of devices per group
+            "devices_per_round": 12,
+            "pct_data_per_device": 0.01,
+            "transition": [False],
+            "groups": lambda d,s: {g: partial(d.rand_iid, size=s,group=g,perc=0.25) for g in range(d.t_count)},
+            "timeline": lambda d,size: {0: reduce((lambda o, s: o.update({s: round(12/d.t_count)}) or o), range(d.t_count), {})},
+        },
+        {
+            "name": "50% IID",
+            "non_fed": True,
+            "datasets": DataSetCollection.data_sets_names,
+            "rounds": 5,
+            "devices": 120, # number of devices per group
+            "devices_per_round": 12,
+            "pct_data_per_device": 0.01,
+            "transition": [False],
+            "groups": lambda d,s: {g: partial(d.rand_iid, size=s,group=g,perc=0.5) for g in range(d.t_count)},
+            "timeline": lambda d,size: {0: reduce((lambda o, s: o.update({s: round(12/d.t_count)}) or o), range(d.t_count), {})},
+        },
+        {
+            "name": "75% IID",
+            "non_fed": True,
+            "datasets": DataSetCollection.data_sets_names,
+            "rounds": 5,
+            "devices": 120, # number of devices per group
+            "devices_per_round": 12,
+            "pct_data_per_device": 0.01,
+            "transition": [False],
+            "groups": lambda d,s: {g: partial(d.rand_iid, size=s,group=g,perc=0.75) for g in range(d.t_count)},
+            "timeline": lambda d,size: {0: reduce((lambda o, s: o.update({s: round(12/d.t_count)}) or o), range(d.t_count), {})},
+        },
+        {
+            "name": "100% IID",
+            "non_fed": True,
+            "datasets": DataSetCollection.data_sets_names,
+            "rounds": 5,
+            "devices": 120,
+            "devices_per_round": 12,
+            "pct_data_per_device": 0.01,
+            "transition": [False],
+            # One group per cluster
+            "groups": lambda d,s: {g: partial(d.rand_g, size=s,group=g) for g in range(d.t_count)},
+            # All rounds (round 0), sample evenly from all groups
+            "timeline": lambda d,size: {0: reduce((lambda o, s: o.update({s: round(12/d.t_count)}) or o), range(d.t_count), {})},
+        },
         {
             "name": "Cross-Device Detection",
             "non_fed": True,
@@ -259,31 +259,31 @@ layers = {
             "server": {"class": gossip_KMeans_server, "kwargs": dict(params=layer_map["gossip_server_params"])},
             "device": {"class": gossip_KMeans_Device, "kwargs": dict(params=layer_map["gossip_device_params"])},
         },
+        {
+            "name": "KMeans Distributed Centralized",
+            "device_multi": 10,
+            "server": {"class": KMeans_Server_Central, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
+            "device": {"class": KMeans_Device_Central, "kwargs": dict(params=layer_map["k_means_device_params"])},
+        },
         # {
-        #     "name": "KMeans Distributed Centralized",
-        #     "device_multi": 10,
-        #     "server": {"class": KMeans_Server_Central, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
-        #     "device": {"class": KMeans_Device_Central, "kwargs": dict(params=layer_map["k_means_device_params"])},
+        #     "name": "SOM (Fed)",
+        #     "server": {"class": SOM_server, "kwargs": dict(params=layer_map["som_params"])}, 
+        #     "device": {"class": SOM_Device, "kwargs": dict(params=layer_map["som_params"])},
         # },
-        # # {
-        # #     "name": "SOM (Fed)",
-        # #     "server": {"class": SOM_server, "kwargs": dict(params=layer_map["som_params"])}, 
-        # #     "device": {"class": SOM_Device, "kwargs": dict(params=layer_map["som_params"])},
-        # # },
+        {
+            "name": "KMeans Server",
+            "server": {"class": KMeans_Server, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
+            "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
+        },
         # {
-        #     "name": "KMeans Server",
-        #     "server": {"class": KMeans_Server, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
+        #     "name": "KMeans Server Carry",
+        #     "server": {"class": KMeans_Server_Carry, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
         #     "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
         # },
-        # # {
-        # #     "name": "KMeans Server Carry",
-        # #     "server": {"class": KMeans_Server_Carry, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
-        # #     "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
-        # # },
-        # {
-        #     "name": "KMeans Server Keep",
-        #     "server": {"class": KMeans_Server_Keep, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
-        #     "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
-        # },
+        {
+            "name": "KMeans Server Keep",
+            "server": {"class": KMeans_Server_Keep, "kwargs": dict(cure_params=layer_map["k_means_server_params"])},
+            "device": {"class": K_Means_Device, "kwargs": dict(params=layer_map["k_means_device_params"])},
+        },
     ]
 }
