@@ -1,6 +1,18 @@
-# CS-242-Clustering
+# Federated K-Means Clustering (Harvard CS-242)
+
+*Abstract: Topologies are at the core of networking and now a crucial part of teams of robotic systems. Unlike the topologies of traditional networking, the switching networks of mobile multi-agent robotic systems present dynamic topologies where the connectivity or paths of the network are not designed beforehand but rather often dictated by motion planning, formation control, and obstacle avoidance. The algebraic connectivity of these topologies can influence traffic rates, routing paths, rates of convergence and the performance of a number of algorithms; one pervasive relation is the influences of connectivity on the rate and extent of individual agent influence in negotiation algorithms like consensus. Through this paper we motivate a line of work in dictating the algebraic connectivity of a communication topology layered on top of hardware communication networks. We present an algorithm that returns a subgraph of the communication network based on a desired algebraic connectivity parameter, allowing system engineers or supervisors to control the algebraic connectivity of their mobile network and even dampen the connectivity on the fly.*
+
+Paper: [Federated K-Means Clustering](CS_242_Final_Project_Report.pdf)
+
+Presentation: https://docs.google.com/presentation/d/1wtPREGhO4m2s0NpJcQzf6mwMJv1vpODz8uKufSrB6U0/edit?usp=sharing
+
+----
+
 
 ## To Run a Test Suite
+
+**DO NOT RUN WITHOUT READING!**
+
 Edit `Testing/config.py` to include the benchmarks and algorithms to run. Then run:
 
 ```
@@ -9,8 +21,6 @@ python3 -m Testing.testing
 
 
 #### Flags
-
-DO NOT RUN WITHOUT READING!
 
 Default state is set to >50 tests.
 
